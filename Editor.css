@@ -1,0 +1,302 @@
+#D3CanvasDiv {
+	/* border: 1px solid black; */
+	height: 480px;
+	/* width: 840px; */
+	width: 100%;
+	margin:0 auto;
+	display: block;
+
+	width: 100%;
+  float: right;
+  display: inline-block;
+	height: 100%;
+}
+
+#canvas {
+	/*outline: thin solid red;*/
+}
+
+.layer.active {
+	stroke: #000000;
+}
+
+.categoryGroup .layerIcon {
+	fill-opacity: 1;
+}
+
+.categoryGroup .layerIcon:hover {
+	fill-opacity: 0.8;
+}
+
+/*.layer.set0 circle.node,*/
+g.set0 > circle.node,
+.categoryGroup.set0 {
+	fill: #1f77b4;
+}
+
+path.link.set0 {
+	stroke: #1f77b4;
+	marker-end: url("#end-arrow-set0");
+}
+
+/*.layer.set1 circle.node,*/
+g.set1 > circle.node,
+.categoryGroup.set1 {
+	fill: #ff7f0e;
+}
+
+path.link.set1 {
+	stroke: #ff7f0e;
+	marker-end: url("#end-arrow-set1");
+}
+
+/*.layer.set2 circle.node,*/
+g.set2 > circle.node,
+.categoryGroup.set2 {
+	fill: #2ca02c;
+}
+
+path.link.set2 {
+	stroke: #2ca02c;
+	marker-end: url("#end-arrow-set2");
+}
+
+/*.layer.set3 circle.node,*/
+g.set3 > circle.node,
+.categoryGroup.set3 {
+	fill: #d62728;
+}
+
+path.link.set3 {
+	stroke: #d62728;
+	marker-end: url("#end-arrow-set3");
+}
+
+/*.layer.set4 circle.node,*/
+g.set4 > circle.node,
+.categoryGroup.set4 {
+	fill: #9467bd;
+}
+
+path.link.set4 {
+	stroke: #9467bd;
+	marker-end: url("#end-arrow-set4");
+}
+
+/*.layer.set5 circle.node,*/
+g.set5 > circle.node,
+.categoryGroup.set5 {
+	fill: #8c564b;
+}
+
+path.link.set5 {
+	stroke: #8c564b;
+	marker-end: url("#end-arrow-set5");
+}
+
+/*.layer.set6 circle.node,*/
+g.set6 > circle.node,
+.categoryGroup.set6 {
+	fill: #e377c2;
+}
+
+path.link.set6 {
+	stroke: #e377c2;
+	marker-end: url("#end-arrow-set6");
+}
+
+/*.layer.set7 circle.node,*/
+g.set7 > circle.node,
+.categoryGroup.set7 {
+	fill: #7f7f7f;
+}
+
+path.link.set7 {
+	stroke: #7f7f7f;
+	marker-end: url("#end-arrow-set7");
+}
+
+/*.layer.set8 circle.node,*/
+g.set8 > circle.node,
+.categoryGroup.set8 {
+	fill: #bcbd22;
+}
+
+path.link.set8 {
+	stroke: #bcbd22;
+	marker-end: url("#end-arrow-set8");
+}
+
+/*.layer.set9 circle.node,*/
+g.set9 > circle.node,
+.categoryGroup.set9 {
+	fill: #17becf;
+}
+
+path.link.set9 {
+	stroke: #17becf;
+	marker-end: url("#end-arrow-set9");
+}
+
+path.link {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2px;
+  cursor: default;
+
+  marker-end: url("#end-arrow");
+}
+
+svg:not(.active):not(.ctrl) path.link {
+  cursor: pointer;
+}
+
+path.link.selected {
+  stroke-dasharray: 10,2;
+  stroke: red;
+
+  marker-end: url("#end-arrow-selected");
+}
+
+path.link.selectInfo {
+	stroke-dasharray: 10, 2;
+	stroke: blue;
+
+	marker-end: url("#end-arrow-selectInfo");
+}
+
+path.link.dragline {
+  pointer-events: none;
+}
+
+path.link.hidden {
+  stroke-width: 0;
+}
+
+path.link.hover {
+	stroke: #777777;
+}
+
+g > circle.node {
+  	stroke-width: 1.5px;
+  	cursor: pointer;
+  	fill: #777777;
+  	stroke: #000000;
+}
+
+g > circle.node.hover {
+	fill: blue;
+}
+
+g > circle.node.selected {
+	fill: red;
+}
+
+g > circle.node.selected.hover {
+	cursor: -webkit-grab;
+}
+
+g > circle.node.selected.dragged {
+	cursor: -webkit-grabbing;
+}
+
+.dragged {
+	cursor: -webkit-grabbing;
+}
+
+g > circle.node.selectInfo {
+	fill: blue;
+}
+
+g > circle.node.reflexive {
+  	stroke: #000 !important;
+  	stroke-width: 2.5px;
+}
+
+g > circle.nodetext{
+
+}
+
+#ZoomRect {
+	outline: thin solid red;
+	fill: none;
+}
+
+#LayerBox {
+	cursor: default;
+}
+
+#LayerBox text{
+	font-size: 12px;
+}
+
+#LayerBox text > tspan.hover {
+	font-weight: bold;
+	fill: red;
+}
+
+#LayerBox text > tspan.edit {
+	/*font-weight: bold;*/
+	cursor: pointer;
+}
+
+#LayerBox > #LayerBoxTitle {
+	font-weight: bold;
+}
+
+.categoryGroup text{
+	fill: black;
+}
+
+.categoryGroup.active text{
+	font-weight: bold;
+	fill: black;
+}
+
+.categoryGroup .layerIcon {
+}
+
+.categoryGroup .layerIcon:hover, .layerIcon.disabled:hover {
+	/*fill: red;*/
+	cursor: pointer;
+}
+
+.categoryGroup .layerIcon.disabled{
+	fill: #E7E7E7;
+}
+
+#InfoBox {
+	cursor: default;
+}
+
+#InfoBox > text{
+	font-size: 12px;
+}
+
+#InfoBox > text > tspan.hover {
+	font-weight: bold;
+	fill: red;
+}
+
+#InfoBox > text > tspan.edit {
+	font-weight: bold;
+	cursor: text;
+}
+
+#InfoBox > #InfoBoxTitle {
+	font-weight: bold;
+}
+
+#InputBox > input {
+	font-size: 12px;
+}
+
+#ProgressBarDiv {
+	height: 2px;
+	width: 100%;
+}
+
+#ProgressBar {
+	background: #CC0500;
+	height: 100%;
+}

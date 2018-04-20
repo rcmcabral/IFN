@@ -1,0 +1,260 @@
+* {
+  margin: 0;
+  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+  line-height: 1.3;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html, body {
+ 	height: 100%;
+ 	min-width: 480px;
+}
+
+.middle{
+  	height: 100%;
+  	width: 100%;
+}
+
+button.disabled {
+	color: #777777;
+}
+
+#Header {
+	height: 100px;
+	width: 100%;
+	text-align: center;
+	background-color: #E7E7E7;
+}
+
+#LogoDiv > span {
+	/* line-height: 100px; */
+  line-height: 98px;
+	font-style: bold;
+	font-size: 3em;
+	/* color: #777777; */
+  color: #0353A4;
+}
+
+#Content {
+  height: calc(100vh - 100px - 24px); /*subtract header height*/
+}
+
+#Content .middle .middleCenter {
+  margin: 0 auto;
+  /* padding: 0 15%; */
+  width: 100%;
+  /* width: 840px; */
+  height: 100%;
+}
+
+#Content .middle .middleCenter:after {
+  content: "";
+  visibility: hidden;
+  display: block;
+  height: 0;
+  clear: both;
+}
+
+#ToolBarDiv {
+	/* border: 1px solid black; */
+	/* height: 100px; */
+	/* width: 840px; */
+	margin:0 auto;
+	display: block;
+
+  width: calc(100% - 200px);
+  position: absolute;
+  background-color: rgb(255,255,255, 0.5);
+  padding: 0 8px;
+
+  width: calc(100% - 201px);
+  display: inline-block;
+}
+
+.toolBarButton {
+  border: 2px solid #E7E7E7;
+  background: #F8F8F8;
+  text-align: center;
+  margin: 4px 0;
+  display: inline-block;
+  border-radius: 5px;
+}
+
+.toolBarButton:hover {
+  /* box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19); */
+  background-image: linear-gradient(transparent,rgba(0,0,0,.05) 40%,rgba(0,0,0,.1))
+}
+
+.toolBarButton:active {
+  background: #E7E7E7;
+}
+
+.toolBarButton > a {
+  text-decoration: none;
+  color: #777777;
+  font-size: .8em;
+  /*font-weight: bold;*/
+  height: 100%;
+  width: 100%;
+  padding: 4px 8px;
+  display: block;
+}
+
+.toolBarButton > a > span {
+
+}
+
+.toolBarButtonIcon {
+	width: 16px;
+	height: 16px;
+	/* fill: #777777; */
+  fill: #0353A4;
+	display: inline-block;
+	vertical-align: bottom;
+}
+
+.toolBarButton.disabled:hover{
+  background-image: none;
+}
+
+.toolBarButton.disabled:active{
+  background: #F8F8F8;
+}
+
+.toolBarButton.disabled > a{
+  pointer-events: none;
+  font-weight: normal;
+  color: #E7E7E7;
+}
+
+.toolBarButton.disabled > a > .toolBarButtonIcon {
+	fill: #E7E7E7;
+}
+
+#DoneButton {
+	/* display: none; */
+}
+
+#InstructionDiv {
+	border: 2px solid #E7E7E7;
+	/* min-height: 50px; */
+	/* width: 840px; */
+	margin: 0 auto;
+	/* display: block; */
+	/* list-style: none; */
+
+  width: 20%;
+  /* min-width: 200px; */
+  position: relative;
+  display: inline-block;
+  float: left;
+  height: 100%;
+  padding: 8px;
+
+  display: none;
+  overflow-x: auto;
+}
+
+#InstructionDivTitle {
+  color: #0353A4;
+  font-weight: bold;
+  font-size: 0.8em;
+}
+
+.instructionBlock {
+  padding: 8px 0;
+}
+
+.instructionBlock > span {
+  display: block;
+  padding: 8px 0;
+}
+
+.instructionBlockTitle {
+  font-weight: bold;
+}
+
+.instructionBlockSubTitle {
+  font-style:italic;
+}
+
+.instructionIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.instructionIcon.element {
+  width: 45px;
+}
+
+.fileUploaderDiv {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+
+.fileUploader {
+  opacity: 0;
+  position: absolute;
+  z-index: 1;
+}
+
+#Footer {
+  width: 100%;
+  height: 24px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  border-top: solid 4px #E7E7E7;
+  background-color: #F8F8F8;
+  color: #777777;
+  font-size: 0.6em;
+}
+
+#FooterCopyrightDiv {
+  text-align: center;
+}
+
+#FooterCopyrightDiv > span {
+  width: 100%;
+  display: block;
+  padding: 4px;
+}
+
+@media only screen and (max-width: 1200px) {
+    .toolBarButton > a > span {
+    	display: none;
+    }
+
+    #InstructionDiv {
+      font-size: 0.9em;
+    }
+}
+
+@media only screen and (max-width: 800px) {
+  #InstructionDiv {
+    position: absolute;
+    bottom: 24px;
+    height: 200px;
+    width: 100%;
+    background: white;
+    min-width: 480px;
+  }
+}
+
+@media only screen and (max-width: 480px) {
+    #LogoDiv > span {
+    	font-size: 2em;
+    }
+
+    #ToolBarDiv {
+    	max-width: 52px;
+    }
+}
+
+@media only screen and (max-width: 300px) {
+
+}
