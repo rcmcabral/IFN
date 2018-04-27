@@ -2470,17 +2470,26 @@ function CalculateLinkCoordinates(d) {
   var sPadding = sourcePadding / (initialZoomScale / currentZoomScale);
   var tPadding = targetPadding / (initialZoomScale / currentZoomScale);
 
+  //Calculate node distances
   var deltaX = targetTranslateX - sourceTranslateX,
       deltaY = targetTranslateY - sourceTranslateY,
-      dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY),
-      normX = deltaX / dist,
+      dist = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+  //If dist is greater than totalPadding, adjust padding (minimum 0)
+  while (sPadding + tPadding > dist && Math.floor(sPadding + tPadding) > 0) {
+    sPadding = sPadding / 2;
+    tPadding = tPadding / 2;
+  }
+
+  //Calculate padding from source/target node
+  var normX = deltaX / dist,
       normY = deltaY / dist,
       sourceX = sourceTranslateX + (sPadding * normX),
       targetX = targetTranslateX - (tPadding * normX),
       sourceY = sourceTranslateY + (sPadding * normY),
       targetY = targetTranslateY - (tPadding * normY);
 
-      // adjustments
+    //Add gap between viceversa paths to prevent overlapping of elements
     var gapDistance = Math.floor(distanceFromCenter / (initialZoomScale / currentZoomScale));
     if(deltaX == 0) {
       var x_adj = Math.sqrt(gapDistance),
@@ -2511,15 +2520,15 @@ function CalculateLinkCoordinates(d) {
     if (!sourceX || !sourceY || !targetX || !targetY) {
       return "";
     }
-
-    var adjDeltaX = targetX - sourceX;
-    var adjDeltaY = targetY - sourceY;
+    //
+    // var adjDeltaX = targetX - sourceX;
+    // var adjDeltaY = targetY - sourceY;
 
     //If deltas doesn't have the same sign, path has inverted
     //TODO: Verify implementation, hide line instead?
-    if ((adjDeltaX > 0 ^ deltaX > 0) && (adjDeltaY > 0 ^ deltaY > 0)) {
-      return "";
-    }
+    // if ((adjDeltaX > 0 ^ deltaX > 0) && (adjDeltaY > 0 ^ deltaY > 0)) {
+    //   return "";
+    // }
 
     return "M" + [sourceX,sourceY]
     // + "L" + [sourceX,sourceY] //NOTE: Workaround - path does not react to width change if there is only one L
@@ -2786,8 +2795,7 @@ function InitializeUploader() {
         // $("#ProgressBarText").text("Uploading " + progressTotal + "%");
       },
       done: function (e, data) {
-        console.log("COMPLETED");
-        console.log(data.result);
+        // console.log("COMPLETED");
         chunkCurrent++;
 
         var fileInfo = data.result.result.response.files[0]; //Limit to single file
@@ -2810,13 +2818,13 @@ function InitializeUploader() {
         console.log("ERROR: " + data.errorThrown);
       },
       start: function(e) {
-        console.log("START");
+        // console.log("START");
       },
       stop: function(e) {
-        console.log("STOP");
+        // console.log("STOP");
         if (chunkCurrent == chunkCount)
         {
-          console.log("REDIRECT");
+          // console.log("REDIRECT");
           // $("#ProgressBarText").text("Upload done. Please wait while page is reloaded.");
         }
       }
@@ -2824,42 +2832,62 @@ function InitializeUploader() {
 }
 
 //Gets the data from the uploaded file
+var start;
 function ExtractDataFromFile(filePath) {
-$.ajax({
-    type: "POST",
-    url: 'Scripts/Private/Services.php',
-    // dataType: 'json',
-    data: {functionName: 'FileManager.ExtractData', filePath: filePath },
-    success: function (obj, textstatus) {
-      var result = obj.result;
-      var fileType = result.fileType;
-      var data = result.data;
-      console.log(result.data);
+  start = new Date();
+  console.log("Extracting Data");
 
-      switch(fileType) {
-        case "json":
-          if (!ValidateJSONData(data)) {
-            alert("Invalid json format.");
+  //TODO: Show loading bar
+
+  $.ajax({
+      type: "POST",
+      url: 'Scripts/Private/Services.php',
+      // dataType: 'json',
+      data: {functionName: 'FileManager.ExtractData', filePath: filePath },
+      success: function (obj, textstatus) {
+
+        var result = obj.result;
+        var fileType = result.fileType;
+        var data = result.data;
+
+        console.log("Data received.")
+        console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+
+        switch(fileType) {
+          case "json":
+            if (!ValidateJSONData(data)) {
+              alert("Invalid json format.");
+              DeleteFile(filePath);
+              return;
+            }
+            break;
+          default:
+            alert("Unsupported file type.");
             DeleteFile(filePath);
             return;
-          }
-          break;
-        default:
-          alert("Unsupported file type.");
-          DeleteFile(filePath);
-          return;
+        }
+
+        console.log("Loading data")
+        console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+        LoadData(data);
+
+        console.log("Deleting file")
+        console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+        DeleteFile(filePath);
+
+        //TODO: Hide loading bar
+
+      },
+      error: function(xhr, textStatus, errorThrown ) {
+        alert("Something went wrong. Please contact developer.");
+
+        console.log(xhr);
+        console.log(textStatus);
+        console.log("ERROR:" + errorThrown);
+
+        //TODO: Hide loading bar
       }
-
-      LoadData(data);
-      DeleteFile(filePath);
-
-    },
-    error: function(xhr, textStatus, errorThrown ) {
-      console.log(xhr);
-      console.log(textStatus);
-      console.log("ERROR:" + errorThrown);
-    }
-  });
+    });
 }
 
 //Deletes a file from the server
@@ -2870,8 +2898,6 @@ $.ajax({
   data: { functionName: "FileManager.DeleteFile", filePath: filePath },
   success: function(obj, textStatus) {
     var result = obj.result;
-
-    console.log(result);
   },
   error: function(xhr, textStatus, errorThrown ) {
     console.log(xhr);
@@ -2896,7 +2922,8 @@ for (var i = 0; i < count; i++) {
 
   var networkNodes = data[i].nodes;
   var networkLinks = data[i].links;
-  if (!data[i].name || !networkNodes || !networkLinks) {
+  if (!data[i].name || !(networkNodes || networkLinks)) {
+    //NOTE: must have nodes and/or links
     return false;
   }
 
@@ -2907,10 +2934,12 @@ for (var i = 0; i < count; i++) {
     }
   }
 
-  subCount = networkLinks.length;
-  for (var j = 0; j < subCount; j++) {
-    if (!ValidateLink(networkLinks[j])) {
-      return false;
+  if (networkLinks) {
+    subCount = networkLinks.length;
+    for (var j = 0; j < subCount; j++) {
+      if (!ValidateLink(networkLinks[j])) {
+        return false;
+      }
     }
   }
   return true;
@@ -2930,7 +2959,8 @@ return true;
 //Validates required properies of a link
 function ValidateLink(link) {
 
-if (!link.laneCount || !link.source || !link.target
+//NOTE: Removed laneCount check, must default to 1
+if (!link.source || !link.target
   || !ValidateNode(link.source) || !ValidateNode(link.target)) {
   return false;
 }
@@ -2988,6 +3018,9 @@ function LoadData(data) {
     }
   }
 
+  console.log("Network data fixed")
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+
   var lastNetworkId;
   for (var j = 0; j < count; j++) {
 
@@ -2997,10 +3030,17 @@ function LoadData(data) {
     }
   }
 
+  console.log("Refreshing Canvas")
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
   RefreshCanvas();
+
+  console.log("Centering Canvas")
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
   CenterCanvas();
 
   if (lastNetworkId) {
+    console.log("Activating Network")
+    console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
     ActivateNetwork(lastNetworkId);
   }
 }
@@ -3012,6 +3052,10 @@ function LoadNetworkData(newNetwork) {
   var newNodes = newNetwork.nodes;
   var newLinks = newNetwork.links;
   var subCount;
+
+  console.log("Loading Network Data");
+  console.log("Node Count: " + (newNodes ? newNodes.length : 0));
+  console.log("Links Count: " + (newLinks ? newLinks.length : 0));
 
   var nodeList = [];
   var linkList = [];
@@ -3053,46 +3097,60 @@ function LoadNetworkData(newNetwork) {
     nodeList.push({ id: node.id });
   }
 
+  console.log("New nodes loaded");
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+
   //Check if links exists already
   //If exists, get id of corresponding link (identify by long and lat)
   //If not, add new link
-  subCount = newLinks.length;
-  for (var i = 0; i < subCount; i++) {
+  if (newLinks) {
+      subCount = newLinks.length;
+      for (var i = 0; i < subCount; i++) {
 
-    //If source/target nodes doesn't exists, create
-    var sourceNode = nodes.find(x => x.fx == newLinks[i].source.fx && x.fy == newLinks[i].source.fy);
-    if (!sourceNode) {
-      //Create new node
-      sourceNode = { id: GetNextNodeId(), fx: newLinks[i].source.fx, fy:  newLinks[i].source.fy };
-      nodes.push(sourceNode);
-    }
-    nodeList.push({ id: sourceNode.id });
+        //If source/target nodes doesn't exists, create
+        var sourceNode = nodes.find(x => x.fx == newLinks[i].source.fx && x.fy == newLinks[i].source.fy);
+        if (!sourceNode) {
+          //Create new node
+          sourceNode = { id: GetNextNodeId(), fx: newLinks[i].source.fx, fy:  newLinks[i].source.fy };
+          nodes.push(sourceNode);
+        }
+        nodeList.push({ id: sourceNode.id });
 
-    var targetNode = nodes.find(x => x.fx == newLinks[i].target.fx && x.fy == newLinks[i].target.fy);
-    if (!targetNode) {
-      //Create new node
-      targetNode = { id: GetNextNodeId(), fx: newLinks[i].target.fx, fy:  newLinks[i].target.fy };
-      nodes.push(targetNode);
-    }
-    nodeList.push({ id: targetNode.id });
+        var targetNode = nodes.find(x => x.fx == newLinks[i].target.fx && x.fy == newLinks[i].target.fy);
+        if (!targetNode) {
+          //Create new node
+          targetNode = { id: GetNextNodeId(), fx: newLinks[i].target.fx, fy:  newLinks[i].target.fy };
+          nodes.push(targetNode);
+        }
+        nodeList.push({ id: targetNode.id });
 
 
-    //TODO: Compare performance with comparing via source and target node first
-    var link = links.find(x => x.source.fx == newLinks[i].source.fx && x.source.fy == newLinks[i].source.fy &&
-              x.target.fx == newLinks[i].target.fx && x.target.fy == newLinks[i].target.fy);
+        //TODO: Compare performance with comparing via source and target node first
+        var link = links.find(x => x.source.fx == newLinks[i].source.fx && x.source.fy == newLinks[i].source.fy &&
+                  x.target.fx == newLinks[i].target.fx && x.target.fy == newLinks[i].target.fy);
 
-    if (!link) {
-      //Create new link
-      //TODO: Figure out what to assign base lane count
-      link = { source: sourceNode, target: targetNode, laneCount: 1 };
-      links.push(link);
-    }
+        if (!link) {
+          //Create new link
+          //TODO: Figure out what to assign base lane count
+          link = { source: sourceNode, target: targetNode, laneCount: 1 };
+          links.push(link);
+        }
 
-    var networkLaneCount = newLinks[i].laneCount ? newLinks[i].laneCount : 1;
-    linkList.push({ id: GetLinkId(link), laneCount: networkLaneCount});
+        var networkLaneCount = newLinks[i].laneCount ? newLinks[i].laneCount : 1;
+        linkList.push({ id: GetLinkId(link), laneCount: networkLaneCount});
+      }
   }
 
+  console.log("New links loaded");
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+
   AssignToNetwork(network.id, nodeList, linkList);
+
+  console.log("Assigned to network");
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+
+  console.log("Finished loading network data");
+  console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
 
   return network.id;
 }
@@ -3100,7 +3158,7 @@ function LoadNetworkData(newNetwork) {
 //Formats the project data for saving
 function CompileProjectData() {
 
-  var start = new Date();
+  start = new Date();
 
   var projectNetworks = [];//networks.slice();
   var count;
@@ -3376,4 +3434,25 @@ function RecalculateDivs() {
       $("#ToolBarDiv").css("width", "calc(100% - 201px)");
     }
   }
+}
+
+//TEMPORARY
+function TranslateTicksToTime(ticks) {
+  //get seconds from ticks
+  var ts = ticks / 1000;
+
+  //conversion based on seconds
+  var hh = Math.floor( ts / 3600);
+  var mm = Math.floor( (ts % 3600) / 60);
+  var ss = (ts % 3600) % 60;
+
+  //prepend '0' when needed
+  hh = hh < 10 ? '0' + hh : hh;
+  mm = mm < 10 ? '0' + mm : mm;
+  ss = ss < 10 ? '0' + ss : ss;
+
+  //use it
+  var str = hh + ":" + mm + ":" + ss;
+
+  return str;
 }

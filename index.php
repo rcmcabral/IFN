@@ -83,6 +83,7 @@
 					<div class="middle">
 						<div class="middleLeft"></div>
 						<div class="middleCenter">
+							<div id="ErrorDiv"></div>
 							<?php include("./Shared/QuickGuide.php"); ?>
 							<div id="ToolBarDiv">
 								<div id="ToggleInstructionsButton" class="toolBarButton" title="Show Instructions">
