@@ -1346,6 +1346,10 @@ function RemoveFromNetwork(networkId, nodeArray, linkArray) {
   var deleteNodeArray = [];
   var deleteLinkArray = [];
 
+  //Prevent references
+  // nodeArray = Object.assign({}, nodeArray);
+  // linkArray = Object.assign({}, linkArray);
+
   //Get network
   var network = networks.find(x => x.id === networkId);
   var networkNodes = network.nodes;
@@ -1443,6 +1447,12 @@ function DeleteNetwork(d) {
   var networkId = d3.select(this).attr("data-id");
   var styleId = GetStyleId(networkId);
   var activeNetworkId = GetActiveNetworkId();
+
+  //Delete nodes and links if they don't belong to other networks
+  var deleteNetwork = networks.find(x => x.id == networkId);
+  var nodeArray = Object.assign([], deleteNetwork.nodes);
+  var linkArray = Object.assign([], deleteNetwork.links);
+  RemoveFromNetwork(networkId, nodeArray, linkArray);
 
   networks = networks.filter(function(network) {
     return network.id != networkId;
