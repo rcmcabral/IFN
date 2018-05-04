@@ -518,12 +518,25 @@ function InitializeCanvas() {
 
   $(".instructionBlock.dynamic").hide();
 
-  RefreshCanvas();
+  RefreshNodeQuadTree();
+  // RefreshCanvas();
   RefreshMapZoom();
 }
 
 //Manages the display of nodes and paths and events bound to them
 function RefreshCanvas() {
+
+  var topLeft = invProjection.invert([0,0]);
+  var bottomRight = invProjection.invert([width, height]);
+  var mapBounds = {
+    North: topLeft[1],
+    East: bottomRight[0],
+    West: topLeft[0],
+    South: bottomRight[1]
+  };
+
+  var nodeData = FilterNodesByBounds(mapBounds);
+  console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
 
     //Paths (links)
     paths = paths.data(links, function(d){ return GetLinkId(d); });
@@ -544,7 +557,7 @@ function RefreshCanvas() {
 
     //Circles (nodes)
     // NOTE: (from source) the function arg is crucial here! nodes are known by id, not by index!
-    circles = layer.select("#nodes").selectAll("g").data(nodes, function(d) { return d.id; });
+    circles = layer.select("#nodes").selectAll("g").data(nodeData, function(d) { return d.id; });
 
     //Add new nodes to canvas
     var node = circles.enter().append('svg:g');
@@ -2091,6 +2104,8 @@ function RefreshMapZoom(d) {
   circles.attr("transform", CalculateNodeTranslation);
   paths.style("stroke-width", CalculateLinkWidth)
     .attr("d", CalculateLinkCoordinates);
+
+  RefreshCanvas();
 }
 
 //Formats the coordinate text
@@ -2231,6 +2246,7 @@ function InsertNewNode() {
 
   //Add to base nodes
   nodes.push(node);
+  RefreshNodeQuadTree();
   RefreshCanvas();
 
   //Add to current active network
@@ -3042,6 +3058,7 @@ function LoadData(data) {
 
   console.log("Refreshing Canvas")
   console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
+  RefreshNodeQuadTree();
   RefreshCanvas();
 
   console.log("Centering Canvas")
@@ -3466,3 +3483,55 @@ function TranslateTicksToTime(ticks) {
 
   return str;
 }
+
+//QUADTREE - http://bl.ocks.org/sumbera/9972460
+var nodeQuadTree;
+function RefreshNodeQuadTree() {
+  nodeQuadTree = d3.geom.quadtree(nodes.map(
+              function (node, i) {
+                  return {
+                      x: node.fx,
+                      y: node.fy,
+                      all: node
+                  };
+                }
+              )
+            );
+}
+
+//NOTE: West, South, East, North because coordinate system follows descending latitude
+function FilterNodesByBounds(mapBounds) {
+  var filteredNodes = [];
+  nodeQuadTree.visit(function (node, x1, y1, x2, y2) {
+      var p = node.point;
+      if ((p) && (p.x >= mapBounds.West) && (p.x < mapBounds.East) && (p.y >= mapBounds.South) && (p.y < mapBounds.North)) {
+          filteredNodes.push(node.point.all);
+      }
+      return x1 >= mapBounds.East || y1 >= mapBounds.North || x2 < mapBounds.West || y2 < mapBounds.South;
+  });
+
+  return filteredNodes;
+}
+
+// var linkQuadTree;
+// function RefreshLinkQuadTree() {
+//   linkQuadTree = d3.geom.quadtree(links.map(
+//                 function (link, i) {
+//                   return {
+//                       sourceX: link.source.fx,
+//                       sourceY: link.source.fy,
+//                       targetX: link.target.fx,
+//                       targetY: link.target.fy,
+//                       all: link
+//                   };
+//                 }
+//               )
+//             );
+// }
+//
+// function FilterLinksByBounds() {
+//   var filteredLinks = [];
+//   linkQuadTree.visit(function (link, x1, y1, x2, y2) {
+//     console.log(link);
+//   });
+// }
