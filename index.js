@@ -538,8 +538,15 @@ function RefreshCanvas() {
   var nodeData = FilterNodesByBounds(mapBounds);
   console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
 
+  // var linkData = FilterLinksByNodes(nodeData);
+  var linkData = FilterLinksByBounds(mapBounds);
+  // linkBounds.filter(function(link) { return linkData.indexOf(link) ? false : linkData.push(link); });
+  console.log("Filtered links: " + linkData.length + "/" + links.length);
+  console.log(linkData);
+  // console.log(linkBounds);
+
     //Paths (links)
-    paths = paths.data(links, function(d){ return GetLinkId(d); });
+    paths = paths.data(linkData, function(d){ return GetLinkId(d); });
 
     //TODO: Verify use - Update existing paths
     paths.style("stroke-width", CalculateLinkWidth);
@@ -2142,7 +2149,7 @@ function ZoomEnd(d) {
       scale = zoomMin
     }
 
-    CenterView(zoomRect.node(), scale);
+    CenterViewBox(zoomRect.node(), scale);
 
     //Reset zoom rectangle
     zoomRectEnabled = false;
@@ -2408,20 +2415,35 @@ function CenterCanvas() {
     return;
   }
 
-  CenterView(canvas.node(), zoomEvent.scale());
+  //Look for bounding coordinates of ALL data
+  var xWest, xEast, yNorth, ySouth;
+  var nodesFX = nodes.map(x => x.fx);
+  var nodesFY = nodes.map(x => x.fy);
 
+  xWest = Math.min(...nodesFX);
+  xEast = Math.max(...nodesFX);
+  yNorth = Math.max(...nodesFY);
+  ySouth = Math.min(...nodesFY);
+
+  var midGeo = [(xWest + xEast) / 2, (yNorth + ySouth) / 2];
+  AdjustCenter(midGeo, zoomEvent.scale());
 }
 
 //Centers the view on the specified view node (canvas/zoomRect) with the specified scale
-function CenterView(viewNode, scale) {
+function CenterViewBox(viewNode, scale) {
 
+  //Get center based on
   //https://bl.ocks.org/catherinekerr/b3227f16cebc8dd8beee461a945fb323
   var bbox = viewNode.getBBox();
   var midX = bbox.x + (bbox.width / 2) + currentTranslation[0];
   var midY = bbox.y + (bbox.height / 2) + currentTranslation[1];
   var midGeo = invProjection.invert([midX, midY]); //Get middle geographical coordinates
 
+  AdjustCenter(midGeo);
 
+}
+
+function AdjustCenter(midGeo, scale) {
   //Reset projection center and scale
   projection.center(midGeo)
     .scale(scale / 2 / Math.PI);
@@ -3535,3 +3557,67 @@ function FilterNodesByBounds(mapBounds) {
 //     console.log(link);
 //   });
 // }
+
+function FilterLinksByNodes(nodeArray) {
+  var adjacentLinks = [];
+
+  //TODO: Optimize - Determine if there's faster way of implementing
+  var count = nodeArray.length;
+  for (var i = 0; i < count; i++) {
+    links.filter(function(link) {
+      return ((link.source.id == nodeArray[i].id || link.target.id == nodeArray[i].id) && adjacentLinks.indexOf(link)) >= 0 ? false : adjacentLinks.push(link);
+    });
+  }
+
+  return adjacentLinks;
+}
+
+function FilterLinksByBounds(mapBounds) {
+  console.log(mapBounds);
+  return links.filter(function(link){
+    var m = (link.source.fy - link.target.fy) / (link.source.fx - link.target.fx);
+    var b = link.source.fy - (m * link.source.fx);
+
+    // var minY = Math.min(link.source.fy, link.target.fy);
+    // var maxY = Math.max(link.source.fy, link.target.fy);
+    // var minX = Math.min(link.source.fx, link.target.fx);
+    // var maxX = Math.max(link.source.fx, link.target.fx);
+
+    var minY = Math.min(mapBounds.North, mapBounds.South);
+    var maxY = Math.max(mapBounds.North, mapBounds.South);
+    var minX = Math.min(mapBounds.East, mapBounds.West);
+    var maxX = Math.max(mapBounds.East, mapBounds.West);
+
+
+    var yWest = (m * mapBounds.West) + b;
+    var yEast = (m * mapBounds.East) + b;
+    var xNorth = (mapBounds.North - b) / m;
+    var xSouth = (mapBounds.South - b) / m;
+
+    //Check west
+    var y = (m * mapBounds.West) + b;
+    if (y > minY && y < maxY) {
+      return true;
+    }
+
+    //Check east
+    y = (m * mapBounds.East) + b;
+    if (y > minY && y < maxY) {
+      return true;
+    }
+
+    //Check North
+    var x = (mapBounds.North - b) / m;
+    if (x > minX && x < maxX) {
+      return true;
+    }
+
+    //Check South
+    x = (mapBounds.South - b) / m;
+    if (x > minX && x < maxX) {
+      return true;
+    }
+
+    return false;
+  });
+}
