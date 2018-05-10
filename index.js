@@ -10,6 +10,8 @@ var nodes = [];
 var links = [];
 
 var sourceNode;
+var selectInfoNode = null;
+var selectInfoLink = null;
 var selectedNodes = [];
 var selectedLinks = [];
 var adjacentNodes = [];
@@ -136,9 +138,14 @@ var dragNullEvent = d3.behavior.drag()
     .on("drag", null)
     .on("dragend", null);
 
-
+var currentNodeClick = null;
+var currentPathClick = null;
 
 function PageLoaded() {
+
+  //Initial button events
+  currentNodeClick = ToggleNodeInfoBox;
+  currentPathClick = TogglePathInfoBox;
 
   InitializeUploader();
   InitializeCanvas();
@@ -191,9 +198,12 @@ function AddNodeButton_Clicked() {
   $(".instructionBlock.dynamic").hide();
   $("#AddNodeInstructionDiv").show();
 
+  currentNodeClick = null;
+  currentPathClick = null;
+
   svg.on("click", InsertNewNode);
-  circles.on("click", null);
-  paths.on("click", null);
+  circles.on("click", currentNodeClick);
+  paths.on("click", currentPathClick);
 
   ResetStyles();
 }
@@ -206,13 +216,15 @@ function AddLinkButton_Clicked() {
   $(".instructionBlock.dynamic").hide();
   $("#AddLinkInstructionDiv").show();
 
-  circles
-    .on("mousedown", SelectSourceNode)
+  currentNodeClick = null;
+  currentPathClick = null;
+
+  circles.on("mousedown", SelectSourceNode)
     .on("mouseup", SelectEndNode)
-    .on("click", null);
+    .on("click", currentNodeClick);
 
   svg.on("mouseup", HideDragLine);
-  paths.on("click", null);
+  paths.on("click", currentPathClick);
 
   ResetStyles();
 }
@@ -235,11 +247,17 @@ function SelectButton_Clicked() {
   $(".instructionBlock.dynamic").hide();
   $("#SelectInstructionDiv").show();
 
-  circles.on("click", SelectNode);
-  paths.on("click", SelectLink);
+  currentNodeClick = SelectNode;
+  currentPathClick = SelectLink;
+
+  circles.on("click", currentNodeClick);
+  paths.on("click", currentPathClick);
 
   selectedLinks = [];
   selectedNodes = [];
+
+  selectInfoLink = null;
+  selectInfoNode = null;
 
   selectEnabled = true;
 
@@ -289,6 +307,9 @@ function DeleteButton_Clicked() {
   selectedNodes = [];
   adjacentLinks = [];
   selectedLinks = [];
+
+  selectInfoNode = null;
+  selectInfoLink = null;
 }
 
 function DoneButton_Clicked() {
@@ -330,6 +351,9 @@ function AssignToNetwork_Clicked(d) {
   selectedNodes = [];
   selectedLinks = [];
   adjacentNodes = [];
+
+  selectInfoNode = null;
+  selectInfoLink = null;
 }
 
 function RemoveFromNetwork_Clicked(d) {
@@ -343,6 +367,9 @@ function RemoveFromNetwork_Clicked(d) {
   selectedNodes = [];
   selectedLinks = [];
   adjacentLinks = [];
+
+  selectInfoNode = null;
+  selectInfoLink = null;
 }
 
 /**************
@@ -357,8 +384,13 @@ function ResetButtonEvents() {
   selectedNodes = [];
   adjacentLinks = [];
   adjacentNodes = [];
+  selectInfoNode = null;
+  selectInfoLink = null;
 
   selectEnabled = false;
+
+  currentNodeClick = ToggleNodeInfoBox;
+  currentPathClick = TogglePathInfoBox;
 
   //Reset Events
   svg.on("mouseup", null)
@@ -368,11 +400,11 @@ function ResetButtonEvents() {
 
   circles.on("mousedown", null)
     .on("mouseup", null)
-    .on("click", ToggleNodeInfoBox)
+    .on("click", currentNodeClick)
     .on('mousedown.drag', null);
 
   paths.on("mousedown", null)
-    .on("click", TogglePathInfoBox);
+    .on("click", currentPathClick);
 
   $(".instructionBlock.dynamic").hide();
 
@@ -536,51 +568,62 @@ function RefreshCanvas() {
   };
 
   var nodeData = FilterNodesByBounds(mapBounds);
+  var linkData = FilterLinksByNodes(nodeData);
+  var linkBounds = FilterLinksByBounds(mapBounds);
+  linkBounds.filter(function(link) { return linkData.indexOf(link) >= 0 ? false : linkData.push(link); });
   console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
-
-  // var linkData = FilterLinksByNodes(nodeData);
-  var linkData = FilterLinksByBounds(mapBounds);
-  // linkBounds.filter(function(link) { return linkData.indexOf(link) ? false : linkData.push(link); });
   console.log("Filtered links: " + linkData.length + "/" + links.length);
-  console.log(linkData);
-  // console.log(linkBounds);
 
-    //Paths (links)
-    paths = paths.data(linkData, function(d){ return GetLinkId(d); });
+  if (nodeData.length == 0 || linkData.length == 0) {
+    return;
+  }
 
-    //TODO: Verify use - Update existing paths
-    paths.style("stroke-width", CalculateLinkWidth);
+  //Paths (links)
+  paths = paths.data(linkData, function(d){ return GetLinkId(d); });
 
-    //Add new links to canvas
-    var line = paths.enter().append('svg:path')
-      .attr("id", GetLinkId)
-      .attr('class', 'link')
-      .attr("d", CalculateLinkCoordinates)
-      .style("stroke-width", CalculateLinkWidth)
-      .on("click", TogglePathInfoBox);
+  //TODO: Verify use - Update existing paths
+  paths.style("stroke-width", CalculateLinkWidth);
 
-    //Remove old link data
-    paths.exit().remove();
+  //Add new links to canvas
+  var line = paths.enter().append('svg:path')
+    .attr("id", GetLinkId)
+    .attr('class', 'link')
+    .classed("active", CheckLinkActive)
+    .classed("selectInfo", CheckLinkSelectInfo)
+    .classed("selected", CheckLinkSelect)
+    .attr("d", CalculateLinkCoordinates)
+    .style("stroke-width", CalculateLinkWidth)
+    .on("click", currentPathClick);
 
-    //Circles (nodes)
-    // NOTE: (from source) the function arg is crucial here! nodes are known by id, not by index!
-    circles = layer.select("#nodes").selectAll("g").data(nodeData, function(d) { return d.id; });
+  //Remove old link data
+  paths.exit().remove();
 
-    //Add new nodes to canvas
-    var node = circles.enter().append('svg:g');
-    node.attr("transform", CalculateNodeTranslation)
-      .attr("id", function(d) { return d.id; })
-      .on("click", ToggleNodeInfoBox);
+  //Circles (nodes)
+  // NOTE: (from source) the function arg is crucial here! nodes are known by id, not by index!
+  circles = layer.select("#nodes").selectAll("g").data(nodeData, function(d) { return d.id; });
 
-    node.append('svg:circle')
-      .attr('class', 'node')
-      .attr('r', radius)
-      .attr("stroke-width", 4);
-      // .attr("r", 24 / zoomEvent.scale()) 						//NOTE: Default tile implementation: scales node with zoom
-      // .style("stroke-width", 8 / zoomEvent.scale())	//NOTE: Default tile implementation: scales node with zoom
+  //Add new nodes to canvas
+  var node = circles.enter().append('svg:g');
+  node.attr("transform", CalculateNodeTranslation)
+    .attr("id", function(d) { return d.id; })
+    .attr("class", GetNodeStyle)
+    .on("click", currentNodeClick);
 
-    //Remove old nodes data
-    circles.exit().remove();
+  node.append('svg:circle')
+    .attr('class', 'node')
+    .classed("active", CheckNodeActive)
+    .classed("selectInfo", CheckNodeSelectInfo)
+    .classed("selected", CheckNodeSelect)
+    .attr("transform", function(d) {return CheckNodeSelectInfo(d) || CheckNodeSelect(d) ? "scale(2)" : ""})
+    .attr('r', radius)
+    .attr("stroke-width", 4);
+    // .attr("r", 24 / zoomEvent.scale()) 						//NOTE: Default tile implementation: scales node with zoom
+    // .style("stroke-width", 8 / zoomEvent.scale())	//NOTE: Default tile implementation: scales node with zoom
+
+  //Remove old nodes data
+  circles.exit().remove();
+
+  RefreshPathStyles();
 }
 
 //Deletes and rebuilds all contents (icons and names) contained in  Network Box
@@ -1543,16 +1586,19 @@ function ToggleNodeInfoBox(d) {
   //Limit info selection to only one node & path
   selectedNodes = [];
   selectedLinks = [];
+  // selectInfoNode = null;
+  selectInfoLink = null;
 
   var node = d3.select(this);
   var nodeCircle = node.select("circle");
-  var isSelected = nodeCircle.classed("selectInfo");
+  var isSelected = CheckNodeSelectInfo(d);
 
   circles.selectAll("circle").classed("selectInfo", false).attr("transform", "");
   paths.classed("selectInfo", false).attr("transform", "");
 
   if (isSelected) {
     $("#InfoBox").hide();
+    selectInfoNode = null;
   }
   else {
     nodeCircle.classed("selectInfo", true).attr("transform", "scale(2)");
@@ -1567,7 +1613,8 @@ function ToggleNodeInfoBox(d) {
 //Prepares the properties of the node to be displayed
 function PrepareNodeData(node) {
 
-  selectedNodes.push(node);
+  // selectedNodes.push(node);
+  selectInfoNode = node;
 
   //Customize values to be displayed
   //NOTE: Add values as needed (max properties implemented)
@@ -1601,17 +1648,21 @@ function TogglePathInfoBox(d) {
   }
 
   //Limit info selection to only one node & path
-  selectedNodes = [];
-  selectedLinks = [];
+  // selectedNodes = [];
+  // selectedLinks = [];
+  selectInfoNode = null;
+  // selectInfoLink = null;
 
   var path = d3.select(this);
-  var isSelected = path.classed("selectInfo");
+  // var isSelected = path.classed("selectInfo");
+  var isSelected = CheckLinkSelectInfo(d);
 
   circles.selectAll("circle").classed("selectInfo", false).attr("transform", "");
   paths.classed("selectInfo", false);
 
   if (isSelected) {
     $("#InfoBox").hide();
+    selectInfoLink = null;
 
     ResetStyles();
   }
@@ -1629,7 +1680,8 @@ function TogglePathInfoBox(d) {
 //Prepares the properties of the link to be displayed
 function PreparePathData(link) {
 
-  selectedLinks.push(link);
+  // selectedLinks.push(link);
+  selectInfoLink = link;
 
   //Customize values to be displayed
   //NOTE: Add values as needed (max properties implemented)
@@ -1672,6 +1724,8 @@ function ToggleNetworkInfoBox(d) {
   //Limit info selection to only one node/path/network
   selectedNodes = [];
   selectedLinks = [];
+  // selectInfoNode = null;
+  selectInfoLink = null;
 
   circles.selectAll("circle").classed("selectInfo", false).attr("transform", "");
   paths.classed("selectInfo", false);
@@ -3535,29 +3589,6 @@ function FilterNodesByBounds(mapBounds) {
   return filteredNodes;
 }
 
-// var linkQuadTree;
-// function RefreshLinkQuadTree() {
-//   linkQuadTree = d3.geom.quadtree(links.map(
-//                 function (link, i) {
-//                   return {
-//                       sourceX: link.source.fx,
-//                       sourceY: link.source.fy,
-//                       targetX: link.target.fx,
-//                       targetY: link.target.fy,
-//                       all: link
-//                   };
-//                 }
-//               )
-//             );
-// }
-//
-// function FilterLinksByBounds() {
-//   var filteredLinks = [];
-//   linkQuadTree.visit(function (link, x1, y1, x2, y2) {
-//     console.log(link);
-//   });
-// }
-
 function FilterLinksByNodes(nodeArray) {
   var adjacentLinks = [];
 
@@ -3573,51 +3604,127 @@ function FilterLinksByNodes(nodeArray) {
 }
 
 function FilterLinksByBounds(mapBounds) {
-  console.log(mapBounds);
+
   return links.filter(function(link){
-    var m = (link.source.fy - link.target.fy) / (link.source.fx - link.target.fx);
-    var b = link.source.fy - (m * link.source.fx);
+    //Link pointers
+    var point1 = [link.source.fx, link.source.fy];
+    var point2 = [link.target.fx, link.target.fy];
 
-    // var minY = Math.min(link.source.fy, link.target.fy);
-    // var maxY = Math.max(link.source.fy, link.target.fy);
-    // var minX = Math.min(link.source.fx, link.target.fx);
-    // var maxX = Math.max(link.source.fx, link.target.fx);
-
-    var minY = Math.min(mapBounds.North, mapBounds.South);
-    var maxY = Math.max(mapBounds.North, mapBounds.South);
-    var minX = Math.min(mapBounds.East, mapBounds.West);
-    var maxX = Math.max(mapBounds.East, mapBounds.West);
-
-
-    var yWest = (m * mapBounds.West) + b;
-    var yEast = (m * mapBounds.East) + b;
-    var xNorth = (mapBounds.North - b) / m;
-    var xSouth = (mapBounds.South - b) / m;
-
-    //Check west
-    var y = (m * mapBounds.West) + b;
-    if (y > minY && y < maxY) {
-      return true;
-    }
-
-    //Check east
-    y = (m * mapBounds.East) + b;
-    if (y > minY && y < maxY) {
-      return true;
-    }
-
-    //Check North
-    var x = (mapBounds.North - b) / m;
-    if (x > minX && x < maxX) {
-      return true;
-    }
-
-    //Check South
-    x = (mapBounds.South - b) / m;
-    if (x > minX && x < maxX) {
-      return true;
-    }
+    //Check North, East, South, West
+    if(CheckLineIntersection(point1, point2, [mapBounds.West, mapBounds.North], [mapBounds.East, mapBounds.North])) { return true; }
+    if(CheckLineIntersection(point1, point2, [mapBounds.East, mapBounds.North], [mapBounds.East, mapBounds.South])) { return true; }
+    if(CheckLineIntersection(point1, point2, [mapBounds.West, mapBounds.South], [mapBounds.East, mapBounds.South])) { return true; }
+    if(CheckLineIntersection(point1, point2, [mapBounds.West, mapBounds.North], [mapBounds.West, mapBounds.South])) { return true; }
 
     return false;
   });
 }
+
+//SOURCE: https://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect (Gavin's answer)
+function CheckLineIntersection(line1A, line1B, line2A, line2B) {
+  var s1_x = line1B[0] - line1A[0];
+  var s1_y = line1B[1] - line1A[1];
+  var s2_x = line2B[0] - line2A[0];
+  var s2_y = line2B[1] - line2A[1];
+
+  var s = (-s1_y * (line1A[0] - line2A[0]) + s1_x * (line1A[1] - line2A[1])) / (-s2_x * s1_y + s1_x * s2_y);
+  var t = ( s2_x * (line1A[1] - line2A[1]) - s2_y * (line1A[0] - line2A[0])) / (-s2_x * s1_y + s1_x * s2_y);
+
+  if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+  {
+    //Collision detected
+    return true;
+  }
+
+  return false; // No collision
+}
+
+// function GetLinkClass(link) {
+//
+//   //Check if link is part of active network
+//   var activeNetwork = GetActivenetwork();
+//   var isActive = activeNetwork.links.find(x => x.id == link.id) ? true : false;
+//   var isSelected = selectedLinks.find(x => x.id == link.id) ? true : false;
+//
+//   var classes = "";
+//   if (isActive) {
+//     classes += "active";
+//   }
+//
+//   if (isSelected) {
+//     classes += "selected"
+//   }
+//
+// }
+
+function CheckLinkActive(link) {
+  var activeNetwork = GetActiveNetwork();
+  return (activeNetwork && activeNetwork.links.find(x => GetLinkId(x) == GetLinkId(link)));
+}
+
+function CheckLinkSelectInfo(link) {
+  return (selectInfoLink && GetLinkId(link) == GetLinkId(selectInfoLink));
+}
+
+function CheckLinkSelect(link) {
+  return (selectedLinks.find(x => GetLinkId(link) == GetLinkId(x)));
+}
+
+function CheckNodeActive(node) {
+  var activeNetwork = GetActiveNetwork();
+  return (activeNetwork && activeNetwork.nodes.find(x => x.id == node.id));
+}
+
+function CheckNodeSelectInfo(node) {
+  return (selectInfoNode && node.id == selectInfoNode.id);
+}
+
+function CheckNodeSelect(node) {
+  return (selectedNodes.find(x => x.id == node.id));
+}
+
+function GetNodeStyle(node) {
+  if (!CheckNodeActive(node)) {
+    return "";
+  }
+
+  var activeNetworkId = GetActiveNetworkId();
+  return "set" + GetStyleId(activeNetworkId);
+}
+
+// function RefreshNodeClasses() {
+//
+//   // d3.select("#nodes > g")
+//   //   .attr("class", "")
+//   //   .attr("transform", "");
+//   // d3.select("#nodes > g > circle")
+//   //   .classed("active", false)
+//   //   .classed("selectInfo", false)
+//   //   .classed("selected", false);
+//
+//   var activeNetwork = GetActiveNetwork();
+//   var activeNodes = [];
+//   if (activeNetwork) {
+//     activeNetwork.nodes.filter(function(node) {
+//       var x = d3.select("#" + node.id);
+//       if (x) {
+//         x.select("circle").classed("active", true);
+//       }
+//     });
+//   }
+//
+//   if (selectInfoNode) {
+//     d3.select("#" + selectInfoNode.id).attr("transform", "scale(2)");
+//     d3.select("#" + selectInfoNode.id + " > circle").classed("selectInfo", true);
+//   }
+//
+//   if (selectedNodes.length > 0) {
+//     selectedNodes.forEach(function(node) {
+//       var x = d3.select("#" + node.id);
+//       if (x) {
+//         x.attr("transform", "scale(2)");
+//         x.select("circle").classed("selected", true);
+//       }
+//     });
+//   }
+// }
