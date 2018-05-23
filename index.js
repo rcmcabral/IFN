@@ -166,6 +166,10 @@ function PageLoaded() {
 UI/BUTTON EVENTS
 *************/
 
+function LoadingBarCloseButton_Clicked() {
+  HideLoadingDialog();
+}
+
 function ToggleInstructionsButton_Clicked() {
 
   var isVisible = ($("#InstructionDiv").css("display") !== "none");
@@ -574,7 +578,7 @@ function RefreshCanvas() {
   console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
   console.log("Filtered links: " + linkData.length + "/" + links.length);
 
-  if (nodeData.length == 0 || linkData.length == 0) {
+  if (nodeData.length == 0 && linkData.length == 0) {
     return;
   }
 
@@ -597,6 +601,12 @@ function RefreshCanvas() {
 
   //Remove old link data
   paths.exit().remove();
+
+
+  //NOTE: Do not render nodes if zoom scale is below 0.3 or more than 1000 nodes
+  if ((currentZoomScale / initialZoomScale) < 0.3 || nodeData.length > 1000) {
+    nodeData = [];
+  }
 
   //Circles (nodes)
   // NOTE: (from source) the function arg is crucial here! nodes are known by id, not by index!
@@ -2886,6 +2896,7 @@ function InitializeUploader() {
             return $this.fileupload('process', data);
           }
           ).done(function () {
+            ShowLoadingDialog();
             data.submit();
           });
         }
@@ -2907,6 +2918,7 @@ function InitializeUploader() {
         }
         else {
           console.log("ERROR: " + fileInfo.error);
+          HideLoadingDialog();
         }
 
         $("#ProgressBarDiv").hide();
@@ -2917,6 +2929,7 @@ function InitializeUploader() {
       fail: function (e, data) {
         // $("#UploadAreaFormErrorList").append("<li>An error occurred. Please try again or contact the admin.</li>");
         $("#ProgressBarDiv").hide();
+        HideLoadingDialog();
         console.log("ERROR: " + data.errorThrown);
       },
       start: function(e) {
@@ -2938,8 +2951,6 @@ var start;
 function ExtractDataFromFile(filePath) {
   start = new Date();
   console.log("Extracting Data");
-
-  //TODO: Show loading bar
 
   $.ajax({
       type: "POST",
@@ -2976,9 +2987,7 @@ function ExtractDataFromFile(filePath) {
         console.log("Deleting file")
         console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
         DeleteFile(filePath);
-
-        //TODO: Hide loading bar
-
+        HideLoadingDialog();
       },
       error: function(xhr, textStatus, errorThrown ) {
         alert("Something went wrong. Please contact developer.");
@@ -2987,7 +2996,7 @@ function ExtractDataFromFile(filePath) {
         console.log(textStatus);
         console.log("ERROR:" + errorThrown);
 
-        //TODO: Hide loading bar
+        HideLoadingDialog();
       }
     });
 }
@@ -3728,3 +3737,11 @@ function GetNodeStyle(node) {
 //     });
 //   }
 // }
+
+function ShowLoadingDialog() {
+  $("#LoadingBarDiv").show();
+}
+
+function HideLoadingDialog() {
+  $("#LoadingBarDiv").hide();
+}

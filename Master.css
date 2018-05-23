@@ -37,6 +37,36 @@ button.disabled {
   color: #0353A4;
 }
 
+#LoadingBarDiv {
+    min-width: 480px;
+    width: 100%;
+    height: 100%;
+    background: rgba( 255, 255, 255, .5);
+    position: absolute;
+    z-index: 1000;
+}
+
+#LoadingBarCloseDiv {
+  /* float: right; */
+  margin: 4px;
+}
+
+#LoadingBarImage {
+  position: relative;
+  display: block;
+  /* height: 100%; */
+  height: calc(100vh - 44px);
+}
+
+#LoadingBarImage > svg {
+  width: 128px;
+  height: 100%;
+  fill: #0353A4;
+  display: table-cell;
+  margin: auto;
+  vertical-align: middle;
+}
+
 #Content {
   height: calc(100vh - 100px - 24px); /*subtract header height*/
 }

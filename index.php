@@ -50,7 +50,21 @@
 			<div class="middleLeft"></div>
 			<div class="middleCenter">
 				<?php include("./Shared/SVGDefinitions.php"); ?>
-				<div id="Header">
+					<div id="Modals">
+						<div id="LoadingBarDiv" style="display: none;">
+							<div id="LoadingBarCloseDiv" style="visibility: hidden;"> <!-- NOTE: Show close button if needed -->
+								<div id="LoadingBarCloseButton" class="toolBarButton" title="Close">
+									<a href="javascript:void(0);" onclick="LoadingBarCloseButton_Clicked();">
+										<svg class="toolBarButtonIcon"><use xlink:href="#icon-close2"></use></svg>
+									</a>
+								</div>
+							</div>
+							<div id="LoadingBarImage">
+								<svg><use xlink:href="#icon-loading"></use></svg>
+							</div>
+						</div>
+					</div>
+					<div id="Header">
 					<div class="top">
 						<div class="topLeft"></div>
 						<div class="topCenter"></div>
