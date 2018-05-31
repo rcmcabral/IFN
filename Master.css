@@ -62,9 +62,11 @@ button.disabled {
   width: 128px;
   height: 100%;
   fill: #0353A4;
+  stroke: #0353A4;
   display: table-cell;
   margin: auto;
   vertical-align: middle;
+  /* animation: rotate .5s infinite linear; */
 }
 
 #Content {
@@ -252,6 +254,24 @@ button.disabled {
   width: 100%;
   display: block;
   padding: 4px;
+}
+
+.spinner {
+  animation: rotate .5s infinite linear;
+  fill: #0353A4;
+  stroke: #0353A4;
+  height: 32px;
+  width: 32px;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotateZ(0deg)
+    }
+
+    to {
+        transform: rotateZ(360deg)
+    }
 }
 
 @media only screen and (max-width: 1200px) {

@@ -2152,12 +2152,12 @@ function RefreshMapZoom(d) {
     .attr("height", 1)
     .attr("x", function(d) { return d[0]; })
     .attr("y", function(d) { return d[1]; });
-  tileImage.append("use")
-    .attr("xlink:href", "#icon-loading")
-    .attr("width", 0.25)
-    .attr("height", 0.25)
-    .attr("x", function(d) { return d[0] + 0.5 - (0.25/2); })
-    .attr("y", function(d) { return d[1] + 0.5 - (0.25/2); });
+  // tileImage.append("use")
+  //   .attr("xlink:href", "#icon-loading")
+  //   .attr("width", 0.25)
+  //   .attr("height", 0.25)
+  //   .attr("x", function(d) { return d[0] + 0.5 - (0.25/2); })
+  //   .attr("y", function(d) { return d[1] + 0.5 - (0.25/2); });
   tileImage.append("image")
     .attr("xlink:href", function(d) { return "http://" + ["a", "b", "c"][Math.random() * 3 | 0] + ".tile.openstreetmap.org/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
     .attr("width", 1)
@@ -3699,6 +3699,50 @@ function GetNodeStyle(node) {
 
   var activeNetworkId = GetActiveNetworkId();
   return "set" + GetStyleId(activeNetworkId);
+}
+
+// var pathGenerator = d3.svg.line()
+//   .x(function(d) { return d.x; })
+//   .y(function(d) { return d.y; })
+//   .interpolate("linear");
+
+var pathGenerator = d3.geo.path().projection(projection);
+
+function GenerateMultiLinePath(linkData) {
+  var uniqueLinks = RemovePointToPointDuplicates(linkData);
+  // var geoJSON = new Object();
+  // geoJSON.type = "MultiLineString";
+  // geoJSON.coordinates = [];
+
+  var d = "";
+  var count = uniqueLinks.length;
+  for (var i = 0; i < count; i++) {
+    // var coordinatePair = [];
+    // coordinatePair.push([uniqueLinks[i].source.fx, uniqueLinks[i].source.fy]);
+    // coordinatePair.push([uniqueLinks[i].target.fx, uniqueLinks[i].target.fy]);
+    //
+    // geoJSON.coordinates.push(coordinatePair);
+    d += CalculateLinkCoordinates(uniqueLinks[i]);
+    // d += "M" + invProjection([uniqueLinks[i].source.fx, uniqueLinks[i].source.fy]) + "L" + invProjection([uniqueLinks[i].target.fx, uniqueLinks[i].target.fy]);
+  }
+
+  // console.log(geoJSON);
+  // console.log(pathGenerator(geoJSON));
+  console.log(d);
+}
+
+function RemovePointToPointDuplicates(linkData){
+  var uniqueLinks = []; //Object.assign([], linkData);
+  var count = linkData.length;
+
+  for (var i = 0; i < count; i++) {
+    if (!uniqueLinks.find(link => (link.source.id == linkData[i].source.id && link.target.id == linkData[i].target.id)
+        || (link.target.id == linkData[i].source.id && link.source.id == linkData[i].target.id))){
+      uniqueLinks.push(linkData[i]);
+    }
+  }
+
+  return uniqueLinks;
 }
 
 // function RefreshNodeClasses() {

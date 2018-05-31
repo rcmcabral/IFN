@@ -60,7 +60,7 @@
 								</div>
 							</div>
 							<div id="LoadingBarImage">
-								<svg><use xlink:href="#icon-loading"></use></svg>
+								<svg class="spinner"><use xlink:href="#icon-loading"></use></svg>
 							</div>
 						</div>
 					</div>
