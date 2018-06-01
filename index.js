@@ -555,85 +555,108 @@ function InitializeCanvas() {
   $(".instructionBlock.dynamic").hide();
 
   RefreshNodeQuadTree();
-  // RefreshCanvas();
   RefreshMapZoom();
+  RefreshCanvas();
 }
 
 //Manages the display of nodes and paths and events bound to them
 function RefreshCanvas() {
 
-  var topLeft = invProjection.invert([0,0]);
-  var bottomRight = invProjection.invert([width, height]);
-  var mapBounds = {
-    North: topLeft[1],
-    East: bottomRight[0],
-    West: topLeft[0],
-    South: bottomRight[1]
-  };
+  ShowLoadingDialog();
 
-  var nodeData = FilterNodesByBounds(mapBounds);
-  var linkData = FilterLinksByNodes(nodeData);
-  var linkBounds = FilterLinksByBounds(mapBounds);
-  linkBounds.filter(function(link) { return linkData.indexOf(link) >= 0 ? false : linkData.push(link); });
-  console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
-  console.log("Filtered links: " + linkData.length + "/" + links.length);
+  setTimeout( function () {
+    var topLeft = invProjection.invert([0,0]);
+    var bottomRight = invProjection.invert([width, height]);
+    var mapBounds = {
+      North: topLeft[1],
+      East: bottomRight[0],
+      West: topLeft[0],
+      South: bottomRight[1]
+    };
 
-  if (nodeData.length == 0 && linkData.length == 0) {
-    return;
-  }
+    var nodeData = FilterNodesByBounds(mapBounds);
+    var linkData = FilterLinksByNodes(nodeData);
+    var linkBounds = FilterLinksByBounds(mapBounds);
+    linkBounds.filter(function(link) { return linkData.indexOf(link) >= 0 ? false : linkData.push(link); });
+    console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
+    console.log("Filtered links: " + linkData.length + "/" + links.length);
 
-  //Paths (links)
-  paths = paths.data(linkData, function(d){ return GetLinkId(d); });
+    if (nodeData.length == 0) {//} && linkData.length == 0) {
+      HideLoadingDialog();
+      return;
+    }
 
-  //TODO: Verify use - Update existing paths
-  paths.style("stroke-width", CalculateLinkWidth);
+    //NOTE: Merge paths and do not render nodes if zoom scale is below 0.3 or more than 1000 nodes
+    var overviewMode = false;
+    if ((currentZoomScale / initialZoomScale) < 0.3 || nodeData.length > 1000) {
+      nodeData = [];
+      overviewMode = true;
+    }
 
-  //Add new links to canvas
-  var line = paths.enter().append('svg:path')
-    .attr("id", GetLinkId)
-    .attr('class', 'link')
-    .classed("active", CheckLinkActive)
-    .classed("selectInfo", CheckLinkSelectInfo)
-    .classed("selected", CheckLinkSelect)
-    .attr("d", CalculateLinkCoordinates)
-    .style("stroke-width", CalculateLinkWidth)
-    .on("click", currentPathClick);
+    //Paths (links)
+    // if (!overviewMode) {
+      paths = paths.data(linkData, function(d){ return GetLinkId(d); });
 
-  //Remove old link data
-  paths.exit().remove();
+      //TODO: Verify use - Update existing paths
+      paths.style("stroke-width", CalculateLinkWidth);
 
+      //Add new links to canvas
+      var line = paths.enter().append('svg:path')
+        .attr("id", GetLinkId)
+        .attr('class', 'link')
+        .classed("active", CheckLinkActive)
+        .classed("selectInfo", CheckLinkSelectInfo)
+        .classed("selected", CheckLinkSelect)
+        .attr("d", CalculateLinkCoordinates)
+        .style("stroke-width", CalculateLinkWidth)
+        .on("click", currentPathClick);
+    // }
+    // else {
+    //   paths = paths.data([]);
+    //   d3.select("#paths").html("");
+    //
+    //   d3.select("#paths").append("svg:path")
+    //     .attr('class', 'link')
+    //     // .classed("active", CheckLinkActive)
+    //     // .classed("selectInfo", CheckLinkSelectInfo)
+    //     // .classed("selected", CheckLinkSelect)
+    //     .attr("d", function() { return GenerateMultiLinePath(links); })
+    //     .style("stroke-width", 4)
+    //     .style("stroke-linecap", "round");
+    //     // .on("click", currentPathClick);
+    // }
 
-  //NOTE: Do not render nodes if zoom scale is below 0.3 or more than 1000 nodes
-  if ((currentZoomScale / initialZoomScale) < 0.3 || nodeData.length > 1000) {
-    nodeData = [];
-  }
+    //Remove old link data
+    paths.exit().remove();
 
-  //Circles (nodes)
-  // NOTE: (from source) the function arg is crucial here! nodes are known by id, not by index!
-  circles = layer.select("#nodes").selectAll("g").data(nodeData, function(d) { return d.id; });
+    //Circles (nodes)
+    // NOTE: (from source) the function arg is crucial here! nodes are known by id, not by index!
+    circles = layer.select("#nodes").selectAll("g").data(nodeData, function(d) { return d.id; });
 
-  //Add new nodes to canvas
-  var node = circles.enter().append('svg:g');
-  node.attr("transform", CalculateNodeTranslation)
-    .attr("id", function(d) { return d.id; })
-    .attr("class", GetNodeStyle)
-    .on("click", currentNodeClick);
+    //Add new nodes to canvas
+    var node = circles.enter().append('svg:g');
+    node.attr("transform", CalculateNodeTranslation)
+      .attr("id", function(d) { return d.id; })
+      .attr("class", GetNodeStyle)
+      .on("click", currentNodeClick);
 
-  node.append('svg:circle')
-    .attr('class', 'node')
-    .classed("active", CheckNodeActive)
-    .classed("selectInfo", CheckNodeSelectInfo)
-    .classed("selected", CheckNodeSelect)
-    .attr("transform", function(d) {return CheckNodeSelectInfo(d) || CheckNodeSelect(d) ? "scale(2)" : ""})
-    .attr('r', radius)
-    .attr("stroke-width", 4);
-    // .attr("r", 24 / zoomEvent.scale()) 						//NOTE: Default tile implementation: scales node with zoom
-    // .style("stroke-width", 8 / zoomEvent.scale())	//NOTE: Default tile implementation: scales node with zoom
+    node.append('svg:circle')
+      .attr('class', 'node')
+      .classed("active", CheckNodeActive)
+      .classed("selectInfo", CheckNodeSelectInfo)
+      .classed("selected", CheckNodeSelect)
+      .attr("transform", function(d) {return CheckNodeSelectInfo(d) || CheckNodeSelect(d) ? "scale(2)" : ""})
+      .attr('r', radius)
+      .attr("stroke-width", 4);
+      // .attr("r", 24 / zoomEvent.scale()) 						//NOTE: Default tile implementation: scales node with zoom
+      // .style("stroke-width", 8 / zoomEvent.scale())	//NOTE: Default tile implementation: scales node with zoom
 
-  //Remove old nodes data
-  circles.exit().remove();
+    //Remove old nodes data
+    circles.exit().remove();
 
-  RefreshPathStyles();
+    RefreshPathStyles();
+    HideLoadingDialog();
+  } , 0);
 }
 
 //Deletes and rebuilds all contents (icons and names) contained in  Network Box
@@ -2176,7 +2199,7 @@ function RefreshMapZoom(d) {
   paths.style("stroke-width", CalculateLinkWidth)
     .attr("d", CalculateLinkCoordinates);
 
-  RefreshCanvas();
+  // RefreshCanvas();
 }
 
 //Formats the coordinate text
@@ -2220,7 +2243,10 @@ function ZoomEnd(d) {
     zoomRectCoordinates [0, 0];
     zoomRectDimensions = [0, 0];
     UpdateZoomRect(0, 0, 0, 0);
+
   }
+
+  RefreshCanvas();
 }
 
 //Starts drag event for moving
@@ -2518,6 +2544,7 @@ function AdjustCenter(midGeo, scale) {
     .translate(projection([0,0]));
 
   RefreshMapZoom();
+  RefreshCanvas();
 }
 
 //Resizes the zoom rectangle as it is dragged across the canvas
@@ -2995,7 +3022,6 @@ function ExtractDataFromFile(filePath) {
         console.log(xhr);
         console.log(textStatus);
         console.log("ERROR:" + errorThrown);
-
         HideLoadingDialog();
       }
     });
@@ -3521,6 +3547,7 @@ function ResizeWindow() {
   projection.translate([width / 2, height / 2]);
 
   RefreshMapZoom();
+  RefreshCanvas();
 }
 
 //Recalculates div dimensions based on window resizing and on visibility of the quick guide div
@@ -3701,38 +3728,32 @@ function GetNodeStyle(node) {
   return "set" + GetStyleId(activeNetworkId);
 }
 
-// var pathGenerator = d3.svg.line()
-//   .x(function(d) { return d.x; })
-//   .y(function(d) { return d.y; })
-//   .interpolate("linear");
-
 var pathGenerator = d3.geo.path().projection(projection);
 
 function GenerateMultiLinePath(linkData) {
-  var uniqueLinks = RemovePointToPointDuplicates(linkData);
-  // var geoJSON = new Object();
-  // geoJSON.type = "MultiLineString";
-  // geoJSON.coordinates = [];
+  var uniqueLinks = ExtractNonDirectionalLinks(linkData);
 
-  var d = "";
+  var pathData = "";
   var count = uniqueLinks.length;
   for (var i = 0; i < count; i++) {
-    // var coordinatePair = [];
-    // coordinatePair.push([uniqueLinks[i].source.fx, uniqueLinks[i].source.fy]);
-    // coordinatePair.push([uniqueLinks[i].target.fx, uniqueLinks[i].target.fy]);
-    //
-    // geoJSON.coordinates.push(coordinatePair);
-    d += CalculateLinkCoordinates(uniqueLinks[i]);
-    // d += "M" + invProjection([uniqueLinks[i].source.fx, uniqueLinks[i].source.fy]) + "L" + invProjection([uniqueLinks[i].target.fx, uniqueLinks[i].target.fy]);
+
+    var source = invProjection([uniqueLinks[i].source.fx, uniqueLinks[i].source.fy]);
+    var target = invProjection([uniqueLinks[i].target.fx, uniqueLinks[i].target.fy]);
+
+    //Factor in translation and scale
+    source[0] = source[0] - currentTranslation[0];
+    source[1] = source[1] - currentTranslation[1];
+    target[0] = target[0] - currentTranslation[0];
+    target[1] = target[1] - currentTranslation[1];
+
+    pathData += "M" + source + "L" + target;
   }
 
-  // console.log(geoJSON);
-  // console.log(pathGenerator(geoJSON));
-  console.log(d);
+  return pathData;
 }
 
-function RemovePointToPointDuplicates(linkData){
-  var uniqueLinks = []; //Object.assign([], linkData);
+function ExtractNonDirectionalLinks(linkData){
+  var uniqueLinks = [];
   var count = linkData.length;
 
   for (var i = 0; i < count; i++) {

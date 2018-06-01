@@ -8,7 +8,7 @@
 		<link rel="stylesheet" href="Editor.css">
 
 		<!-- ONLINE SCRIPTS -->
-		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<!-- <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 		<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
 		<script type="text/javascript" src="http://d3js.org/d3.geo.tile.v0.min.js"></script>
 
@@ -21,23 +21,23 @@
 		<script type="text/javascript" src="http://blueimp.github.io/jQuery-File-Upload/js/jquery.fileupload-validate.js"></script>
 		<script type="text/javascript" src="http://blueimp.github.io/jQuery-File-Upload/js/jquery.fileupload-image.js"></script>
 
-		<script type="text/javascript" src="https://cdn.rawgit.com/eligrey/FileSaver.js/5733e40e5af936eb3f48554cf6a8a7075d71d18a/FileSaver.js"></script>
+		<script type="text/javascript" src="https://cdn.rawgit.com/eligrey/FileSaver.js/5733e40e5af936eb3f48554cf6a8a7075d71d18a/FileSaver.js"></script> -->
 
 		<!-- LOCAL SCRIPTS -->
-		<!-- <script type="text/javascript" src="/TempScripts/Public/jQuery/jquery_3.2.1.min.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/d3/d3.v3.min.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/d3/d3.geo.tile.v0.min.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery/jquery_3.2.1.min.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/d3/d3.v3.min.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/d3/d3.geo.tile.v0.min.js"></script>
 
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/vendor/jquery.ui.widget.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/load-image.all.min.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/canvas-to-blob.min.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/jquery.iframe-transport.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/jquery.fileupload.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/jquery.fileupload-process.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/jquery.fileupload-validate.js"></script>
-		<script type="text/javascript" src="/TempScripts/Public/jQuery File Upload/jquery.fileupload-image.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/vendor/jquery.ui.widget.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/load-image.all.min.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/canvas-to-blob.min.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/jquery.iframe-transport.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/jquery.fileupload.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/jquery.fileupload-process.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/jquery.fileupload-validate.js"></script>
+		<script type="text/javascript" src="/Scripts/Public/jQuery File Upload/jquery.fileupload-image.js"></script>
 
-		<script type="text/javascript" src="/TempScripts/Public/FileSaver/FileSaver.js"></script> -->
+		<script type="text/javascript" src="/Scripts/Public/FileSaver/FileSaver.js"></script>
 
 	</head>
 	<body>
