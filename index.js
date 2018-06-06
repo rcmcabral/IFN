@@ -126,6 +126,11 @@ var currentTranslation = [0,0];
 var previousScale = 1;
 var currentScale = 1;
 
+var overviewMode = false;
+var previousMapBounds;
+var currentNodeData;
+var currentLinkData;
+
 var dragMoveEvent = d3.behavior.drag()
     .origin(function(d) { return d; })
     .on("dragstart", DragStart)
@@ -526,11 +531,11 @@ function InitializeCanvas() {
   canvas = svg.append("svg:g").attr("id", "canvas");
 
   //TEMPORARY: Marks the center of canvas
-  canvasCenter = svg.append("circle")
-    .attr("id", "canvascenter")
-    .attr("transform", "translate(" + (width/2) + "," + (height/2) + ")")
-    .attr("r",  4)
-    .attr("fill", "black");
+  // canvasCenter = svg.append("circle")
+  //   .attr("id", "canvascenter")
+  //   .attr("transform", "translate(" + (width/2) + "," + (height/2) + ")")
+  //   .attr("r",  4)
+  //   .attr("fill", "black");
 
   //TEMPORARY: display coordinates of mouse
   coordinatesText = svg.append("svg:text")
@@ -560,11 +565,12 @@ function InitializeCanvas() {
 }
 
 //Manages the display of nodes and paths and events bound to them
-function RefreshCanvas() {
+function RefreshCanvas(forceDataReload) {
 
   ShowLoadingDialog();
 
   setTimeout( function () {
+
     var topLeft = invProjection.invert([0,0]);
     var bottomRight = invProjection.invert([width, height]);
     var mapBounds = {
@@ -574,23 +580,38 @@ function RefreshCanvas() {
       South: bottomRight[1]
     };
 
-    var nodeData = FilterNodesByBounds(mapBounds);
-    var linkData = FilterLinksByNodes(nodeData);
-    var linkBounds = FilterLinksByBounds(mapBounds);
-    linkBounds.filter(function(link) { return linkData.indexOf(link) >= 0 ? false : linkData.push(link); });
-    console.log("Filtered nodes: " + nodeData.length + "/" + nodes.length);
-    console.log("Filtered links: " + linkData.length + "/" + links.length);
+    if (!previousMapBounds || previousMapBounds.North != mapBounds.North || previousMapBounds.East != mapBounds.East
+      || previousMapBounds.West != mapBounds.West|| previousMapBounds.South != mapBounds.South
+      || forceDataReload) {
+      previousMapBounds = mapBounds;
+
+      currentNodeData = FilterNodesByBounds(mapBounds);
+      currentLinkData = FilterLinksByNodes(currentNodeData);
+      var linkBounds = FilterLinksByBounds(mapBounds);
+      linkBounds.filter(function(link) { return currentLinkData.indexOf(link) >= 0 ? false : currentLinkData.push(link); });
+      console.log("Filtered nodes: " + currentNodeData.length + "/" + nodes.length);
+      console.log("Filtered links: " + currentLinkData.length + "/" + links.length);
+    }
+
+    var nodeData = currentNodeData;
+    var linkData = currentLinkData;
 
     if (nodeData.length == 0) {//} && linkData.length == 0) {
       HideLoadingDialog();
       return;
     }
 
-    //NOTE: Merge paths and do not render nodes if zoom scale is below 0.3 or more than 1000 nodes
-    var overviewMode = false;
+    //NOTE: Do not render nodes if zoom scale is below 0.3 or more than 1000 nodes
     if ((currentZoomScale / initialZoomScale) < 0.3 || nodeData.length > 1000) {
       nodeData = [];
+    }
+
+    //NOTE: Enable overviewMode if zoom scale is below 0.1
+    if ((currentZoomScale / initialZoomScale) < 0.1) {
       overviewMode = true;
+    }
+    else {
+      overviewMode = false;
     }
 
     //Paths (links)
@@ -598,7 +619,12 @@ function RefreshCanvas() {
       paths = paths.data(linkData, function(d){ return GetLinkId(d); });
 
       //TODO: Verify use - Update existing paths
-      paths.style("stroke-width", CalculateLinkWidth);
+      paths.classed("active", CheckLinkActive)
+        .classed("selectInfo", CheckLinkSelectInfo)
+        .classed("selected", CheckLinkSelect)
+        .classed("overview", overviewMode)
+        .attr("d", CalculateLinkCoordinates)
+        .style("stroke-width", CalculateLinkWidth);
 
       //Add new links to canvas
       var line = paths.enter().append('svg:path')
@@ -607,6 +633,7 @@ function RefreshCanvas() {
         .classed("active", CheckLinkActive)
         .classed("selectInfo", CheckLinkSelectInfo)
         .classed("selected", CheckLinkSelect)
+        .classed("overview", overviewMode)
         .attr("d", CalculateLinkCoordinates)
         .style("stroke-width", CalculateLinkWidth)
         .on("click", currentPathClick);
@@ -2344,7 +2371,14 @@ function InsertNewNode() {
   //Add to base nodes
   nodes.push(node);
   RefreshNodeQuadTree();
-  RefreshCanvas();
+
+  //Zoom in to minimum node zoom
+  if (overviewMode) {
+    AdjustCenter([x,y], 23184652.18821198);
+  }
+  else {
+    RefreshCanvas(true);
+  }
 
   //Add to current active network
   AssignToNetwork(networkId, [node], []);
@@ -2543,8 +2577,10 @@ function AdjustCenter(midGeo, scale) {
     .scale(projection.scale() * 2 * Math.PI)
     .translate(projection([0,0]));
 
+  currentZoomScale = zoomEvent.scale();
+
   RefreshMapZoom();
-  RefreshCanvas();
+  RefreshCanvas(true);
 }
 
 //Resizes the zoom rectangle as it is dragged across the canvas
@@ -2604,6 +2640,10 @@ function CalculateLinkCoordinates(d) {
   var sourceTranslateY = (sourceTranslate[1] - currentTranslation[1]);
   var targetTranslateX = (targetTranslate[0] - currentTranslation[0]);
   var targetTranslateY = (targetTranslate[1] - currentTranslation[1]);
+
+  if (overviewMode) {
+    return "M" + [sourceTranslateX, sourceTranslateY] + "L" + [targetTranslateX, targetTranslateY];
+  }
 
   //NOTE: Divide by scale if paths must not scale with map
   var sPadding = sourcePadding / (initialZoomScale / currentZoomScale);

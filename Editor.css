@@ -150,6 +150,11 @@ path.link.selected {
   marker-end: url("#end-arrow-selected");
 }
 
+path.link.overview {
+	marker-end: none;
+	stroke-linecap: round;
+}
+
 path.link.hidden {
 	display: none;
 }
