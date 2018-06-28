@@ -146,6 +146,34 @@ var dragNullEvent = d3.behavior.drag()
 var currentNodeClick = null;
 var currentPathClick = null;
 
+//DATA PROPERTIES
+//Node Properties - additional properties for a generic (not network specific) node
+//Defaults: ID (system generated), fx, fy
+var nodeProperties = [
+    { key: "name", label: "Name", dataType: "text", enableEdit: true },
+    { key: "area", label: "Area", dataType: "text", enableEdit: true }];
+
+//Link Properties - additional properties for a generic (not network specific) link
+//Defaults: ID, Source ID, Source X, Source Y, Target ID, Target X, Target Y
+var linkProperties = [
+    { key: "name", label: "Name", dataType: "text", enableEdit: true }];
+
+//Network Properties - additional properties for a network
+//Defaults: ID (system generated), Name
+var networkProperties = [{ key: "pcu", label: "PCU", dataType: "int", enableEdit: true }];
+
+//Network Node Properties - additional node properties specific to a network
+//Defaults: none
+//NOTE: Network Node Properties must have different keys from Node Properties
+// SAMPLE : [{ key: "netnod1", label: "Value1", dataType: "text", enableEdit: true }];
+var networkNodeProperties = [];
+
+//Network Link Properties - additional link properties specific to a networkKeys
+//Defaults: laneCount
+//NOTE: Network Link Properties must have different keys from Link Properties
+//SAMPLE: { key: "netlin1", label: "Value1", dataType: "text", enableEdit: true }];
+var networkLinkProperties = [];
+
 function PageLoaded() {
 
   //Initial button events
@@ -567,7 +595,7 @@ function InitializeCanvas() {
 //Manages the display of nodes and paths and events bound to them
 function RefreshCanvas(forceDataReload) {
 
-  ShowLoadingDialog();
+  // ShowLoadingDialog();
 
   setTimeout( function () {
 
@@ -584,6 +612,8 @@ function RefreshCanvas(forceDataReload) {
       || previousMapBounds.West != mapBounds.West|| previousMapBounds.South != mapBounds.South
       || forceDataReload) {
       previousMapBounds = mapBounds;
+
+      ShowLoadingDialog();
 
       currentNodeData = FilterNodesByBounds(mapBounds);
       currentLinkData = FilterLinksByNodes(currentNodeData);
@@ -623,8 +653,8 @@ function RefreshCanvas(forceDataReload) {
         .classed("selectInfo", CheckLinkSelectInfo)
         .classed("selected", CheckLinkSelect)
         .classed("overview", overviewMode)
-        .attr("d", CalculateLinkCoordinates)
-        .style("stroke-width", CalculateLinkWidth);
+        .attr("d", CalculateLinkCoordinates);
+        // .style("stroke-width", CalculateLinkWidth);
 
       //Add new links to canvas
       var line = paths.enter().append('svg:path')
@@ -635,7 +665,7 @@ function RefreshCanvas(forceDataReload) {
         .classed("selected", CheckLinkSelect)
         .classed("overview", overviewMode)
         .attr("d", CalculateLinkCoordinates)
-        .style("stroke-width", CalculateLinkWidth)
+        // .style("stroke-width", CalculateLinkWidth)   //NOTE: Link width calculation done on RefreshLinkWidths
         .on("click", currentPathClick);
     // }
     // else {
@@ -682,6 +712,7 @@ function RefreshCanvas(forceDataReload) {
     circles.exit().remove();
 
     RefreshPathStyles();
+    RefreshPathWidths();
     HideLoadingDialog();
   } , 0);
 }
@@ -878,11 +909,11 @@ function ToggleNetworkState(d) {
   }
 
   //Adjust info data if shown
-  if (selectedLinks.length > 0) {
-    PreparePathData(selectedLinks[0]);
+  if (selectInfoLink) {
+    PreparePathData(selectInfoLink);
   }
-  else if (selectedNodes.length > 0) {
-    PrepareNodeData(selectedNodes[0]);
+  else if (selectInfoNode) {
+    PrepareNodeData(selectInfoNode);
   }
 
 }
@@ -1421,7 +1452,7 @@ function GetLinkNetworks(linkId) {
 }
 
 //Assigns specified nodes and links to the network
-function AssignToNetwork(networkId, nodeArray, linkArray) {
+function AssignToNetwork(networkId, nodeArray, linkArray, forceProperties) {
 
   if (!networkId) {
     return;
@@ -1438,8 +1469,13 @@ function AssignToNetwork(networkId, nodeArray, linkArray) {
   for(var i = 0; i < count; i++) {
     if (!networkNodes.find(x => x.id === nodeArray[i].id)) {
 
-      //Only copy the ID, prevent referencing and duplication of data
-      networkNodes.push({ id: nodeArray[i].id });
+      if (forceProperties) {
+          networkNodes.push(nodeArray[i]);
+      }
+      else {
+        //Only copy the ID, prevent referencing and duplication of data
+        networkNodes.push({ id: nodeArray[i].id });
+      }
     }
   }
 
@@ -1449,8 +1485,13 @@ function AssignToNetwork(networkId, nodeArray, linkArray) {
 
     if (!networkPaths.find(x => GetLinkId(x) === GetLinkId(linkArray[i]))) {
 
-      //Only copy the ID, prevent referencing and duplication of data; default lane count: 1
-      networkPaths.push({ id: GetLinkId(linkArray[i]), laneCount: 1 });
+      if (forceProperties) {
+        networkPaths.push(linkArray[i]);
+      }
+      else {
+        //Only copy the ID, prevent referencing and duplication of data; default lane count: 1
+        networkPaths.push({ id: GetLinkId(linkArray[i]), laneCount: 1 });
+      }
     }
   }
 
@@ -1685,6 +1726,15 @@ function PrepareNodeData(node) {
   properties.push({ key: "fx", label: "X", value: node.fx, enableEdit: false });
   properties.push({ key: "fy", label: "Y", value: node.fy, enableEdit: false });
 
+  var count = nodeProperties.length;
+  for (var i = 0; i < count; i++) {
+    var key = nodeProperties[i].key;
+    var property = Object.assign({}, nodeProperties[i]);
+    property.value = node[key];
+
+    properties.push(property);
+  }
+
   //If there is an active network, get network specific properties
   var network = GetActiveNetwork();
   if (network) {
@@ -1692,7 +1742,15 @@ function PrepareNodeData(node) {
 
     if (networkNode) {
       properties.push({ key: "network", label: "Network", value: network.name, dataType: "string", enableEdit: false });
-      properties.push({ key: "value", label: "Value", value: networkNode.value, dataType: "string", enableEdit: true });
+
+      count = networkNodeProperties.length;
+      for (var i = 0; i < count; i++) {
+        var key = networkNodeProperties[i].key;
+        var property = Object.assign({}, networkNodeProperties[i]);
+        property.value = networkNode[key];
+
+        properties.push(property);
+      }
     }
   }
 
@@ -1756,6 +1814,15 @@ function PreparePathData(link) {
   properties.push({ key: "targetX", label: "Target X", value: link.source.fx, dataType: "string", enableEdit: false });
   properties.push({ key: "targetY", label: "Target Y", value: link.source.fy, dataType: "string", enableEdit: false });
 
+  var count = linkProperties.length;
+  for (var i = 0; i < count; i++) {
+    var key = linkProperties[i].key;
+    var property = Object.assign({}, linkProperties[i]);
+    property.value = link[key];
+
+    properties.push(property);
+  }
+
   //If there is an active network, get network specific properties
   var network = GetActiveNetwork();
   if (network) {
@@ -1764,7 +1831,15 @@ function PreparePathData(link) {
     if (networkLink) {
       properties.push({ key: "network", label: "Network", value: network.name, dataType: "string", enableEdit: false });
       properties.push({ key: "laneCount", label: "Lane #", value: networkLink.laneCount, dataType: "int",enableEdit: true });
-      properties.push({ key: "value", label: "Value", value: networkLink.value, dataType: "string", enableEdit: true });
+
+      count = networkLinkProperties.length;
+      for (var i = 0; i < count; i++) {
+        var key = networkLinkProperties[i].key;
+        var property = Object.assign({}, networkLinkProperties[i]);
+        property.value = networkLink[key];
+
+        properties.push(property);
+      }
     }
   }
 
@@ -1815,7 +1890,15 @@ function PrepareNetworkData(networkId) {
   var properties = []
   properties.push({ key: "id", label: "ID", value: networkId, dataType: "string", enableEdit: false });
   properties.push({ key: "name", label: "Name", value: network.name, dataType: "string", enableEdit: true });
-  properties.push({ key: "pcu", label: "PCU", value: network.pcu, dataType: "int", enableEdit: true });
+  // properties.push({ key: "pcu", label: "PCU", value: network.pcu, dataType: "int", enableEdit: true });
+
+  var count = networkProperties.length;
+  for (var i = 0; i < count; i++) {
+    var property = Object.assign({}, networkProperties[i]);
+    property.value = network[property.key];
+
+    properties.push(property);
+  }
 
   DisplayInfoBoxData("network", title, properties, id);
 }
@@ -2025,14 +2108,20 @@ function UpdatePathValue(key, value, id) {
 
   var link;
 
-  //If a network is active, update properties for that network
-  //If not, update base link values
-  var network = GetActiveNetwork();
-  if (network) {
+  //Check if key is a networkNodeProperty or a nodeProperty
+  if (key == "laneCount" || networkLinkProperties.find(x => x.key == key)) {
+    var network = GetActiveNetwork();
+    if (!network) {
+      return false;
+    }
+
     link = network.links.find(x => GetLinkId(x) === id);
   }
-  else {
+  else if (linkProperties.find(x => x.key == key)){
     link = links.find(x => GetLinkId(x) === id);
+  }
+  else {
+    return false;
   }
 
   //TODO: Validation
@@ -2049,14 +2138,20 @@ function UpdateNodeValue(key, value, id) {
 
   var node;
 
-  //If a network is active, update properties for that network
-  //If not, update base node values;
-  var network = GetActiveNetwork();
-  if (network) {
+  //Check if key is a networkNodeProperty or a nodeProperty
+  if (networkNodeProperties.find(x => x.key == key)) {
+    var network = GetActiveNetwork();
+    if (!network) {
+      return false;
+    }
+
     node = network.nodes.find(x => x.id === id);
   }
-  else {
+  else if (nodeProperties.find(x => x.key == key)){
     node = nodes.find(x => x.id === id);
+  }
+  else {
+    return false;
   }
 
   //TODO: Validation
@@ -2396,11 +2491,12 @@ function InsertNewLink(sourceNode, endNode) {
 
   //Add to base links
   links.push(link);
-  RefreshCanvas();
 
   //Add to current active network
   var networkId = GetActiveNetworkId();
   AssignToNetwork(networkId, [sourceNode, endNode], [link]);
+
+  RefreshCanvas(true);
 }
 
 //Selects the specified node as the source node when adding links
@@ -2563,7 +2659,7 @@ function CenterViewBox(viewNode, scale) {
   var midY = bbox.y + (bbox.height / 2) + currentTranslation[1];
   var midGeo = invProjection.invert([midX, midY]); //Get middle geographical coordinates
 
-  AdjustCenter(midGeo);
+  AdjustCenter(midGeo, scale);
 
 }
 
@@ -3253,6 +3349,14 @@ function LoadNetworkData(newNetwork) {
     }
 
     network = { id: GetNextNetworkId(), name: newNetwork.name, nodes: [], links: []};
+
+    //Add other network properties
+    subCount = networkProperties.length;
+    for (var i = 0; i < subCount; i++) {
+      var key = networkProperties[i].key;
+      network[key] = newNetwork[key];
+    }
+
     networks.push(network);
     RefreshNetworksBox();
   }
@@ -3268,11 +3372,26 @@ function LoadNetworkData(newNetwork) {
     if (!node) {
       //Create new node
       node = { id: GetNextNodeId(), fx: newNodes[i].fx, fy: newNodes[i].fy };
+
+      //Add generic node properties
+      var propCount = nodeProperties.length;
+      for (var j = 0; j < propCount; j++) {
+        var key = nodeProperties[j].key;
+        node[key] = newNodes[i][key];
+      }
       nodes.push(node);
     }
 
-    //TODO: Add other properties unique to network nodes
-    nodeList.push({ id: node.id });
+    //Add other properties unique to network nodes
+    var networkNode = { id: node.id };
+
+    var propCount = networkNodeProperties.length;
+    for (var j = 0; j < propCount; j++) {
+      var key = networkNodeProperties[j].key;
+      networkNode[key] = newNodes[i][key];
+    }
+
+    nodeList.push(networkNode);
   }
 
   console.log("New nodes loaded");
@@ -3309,20 +3428,38 @@ function LoadNetworkData(newNetwork) {
 
         if (!link) {
           //Create new link
-          //TODO: Figure out what to assign base lane count
+          //Base lane count = 1
           link = { source: sourceNode, target: targetNode, laneCount: 1 };
+
+          //Add generic link properties
+          var propCount = linkProperties.length;
+          for (var j = 0; j < propCount; j++) {
+            var key = linkProperties[j].key;
+            link[key] = newLinks[i][key];
+          }
+
           links.push(link);
         }
 
+        //Network specific properties
         var networkLaneCount = newLinks[i].laneCount ? newLinks[i].laneCount : 1;
-        linkList.push({ id: GetLinkId(link), laneCount: networkLaneCount});
+        var networkLink = { id: GetLinkId(link), laneCount: networkLaneCount};
+
+        //Add other properties unique to network links
+        var propCount = networkLinkProperties.length;
+        for (var j = 0; j < propCount; j++) {
+          var key = networkLinkProperties[j].key;
+          networkLink[key] = newLinks[i][key];
+        }
+
+        linkList.push(networkLink);
       }
   }
 
   console.log("New links loaded");
   console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
 
-  AssignToNetwork(network.id, nodeList, linkList);
+  AssignToNetwork(network.id, nodeList, linkList, true);
 
   console.log("Assigned to network");
   console.log("Elapsed: " + TranslateTicksToTime(new Date() - start));
@@ -3340,6 +3477,7 @@ function CompileProjectData() {
 
   var projectNetworks = [];//networks.slice();
   var count;
+  var subCount;
 
   //For each network, assign node/link coordinates to node/link list
   //NOTE: The program keeps a "master list" of all the nodes and links separately from the network nodes and network links
@@ -3360,10 +3498,23 @@ function CompileProjectData() {
       var node = nodes.find(x => x.id == networkNode.id);
 
       //Build node data
-      //TODO: Add network specific node details
       var newNode = new Object();
       newNode.fx = node.fx;
       newNode.fy = node.fy;
+
+      //Adding generic node properties
+      subCount = nodeProperties.length;
+      for (var j = 0; j < subCount; j++) {
+        var key = nodeProperties[j].key;
+        newNode[key] = node[key];
+      }
+
+      //Adding network specific node properties
+      subCount = networkNodeProperties.length;
+      for (var j = 0; j < subCount; j++) {
+        var key = networkNodeProperties[j].key;
+        newNode[key] = networkNode[key];
+      }
 
       nodeList.push(newNode);
     });
@@ -3373,7 +3524,6 @@ function CompileProjectData() {
       var link = links.find(x => GetLinkId(x) == networkLink.id);
 
       //Build link data
-      //TODO: Add network specific link details
       var newLink = Object();
       newLink.laneCount = networkLink.laneCount;
 
@@ -3384,6 +3534,20 @@ function CompileProjectData() {
       newLink.target = Object();
       newLink.target.fx = link.target.fx;
       newLink.target.fy = link.target.fy;
+
+      //Adding generic node properties
+      subCount = linkProperties.length;
+      for (var j = 0; j < subCount; j++) {
+        var key = linkProperties[j].key;
+        newLink[key] = link[key];
+      }
+
+      //Adding network specific node properties
+      subCount = networkLinkProperties.length;
+      for (var j = 0; j < subCount; j++) {
+        var key = networkLinkProperties[j].key;
+        newLink[key] = networkLink[key];
+      }
 
       //TODO: Determine which is faster
       // var newLink = Object.assign({}, networkLink);
@@ -3580,7 +3744,7 @@ function ResizeWindow() {
   infoBoxY = networkBoxY + networkBoxHeight;
   infoBox.attr("transform", "translate(" + infoBoxX + "," + infoBoxY + ")");
 
-  canvasCenter.attr("transform", "translate(" + (width/2) + "," + (height/2) + ")");
+  // canvasCenter.attr("transform", "translate(" + (width/2) + "," + (height/2) + ")");
   coordinatesText.attr("transform", "translate(0," + (height - 2) + ")");
 
   tile.size([width, height]);
