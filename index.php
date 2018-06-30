@@ -226,6 +226,7 @@
 			<div class="bottomRight"></div>
 		</div>
 
+		<script type="text/javascript" src="/dataproperties.js"></script>
 		<script type="text/javascript" src="/index.js"></script>
 	</body>
 </html>

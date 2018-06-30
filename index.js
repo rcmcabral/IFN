@@ -146,34 +146,6 @@ var dragNullEvent = d3.behavior.drag()
 var currentNodeClick = null;
 var currentPathClick = null;
 
-//DATA PROPERTIES
-//Node Properties - additional properties for a generic (not network specific) node
-//Defaults: ID (system generated), fx, fy
-var nodeProperties = [
-    { key: "name", label: "Name", dataType: "text", enableEdit: true },
-    { key: "area", label: "Area", dataType: "text", enableEdit: true }];
-
-//Link Properties - additional properties for a generic (not network specific) link
-//Defaults: ID, Source ID, Source X, Source Y, Target ID, Target X, Target Y
-var linkProperties = [
-    { key: "name", label: "Name", dataType: "text", enableEdit: true }];
-
-//Network Properties - additional properties for a network
-//Defaults: ID (system generated), Name
-var networkProperties = [{ key: "pcu", label: "PCU", dataType: "int", enableEdit: true }];
-
-//Network Node Properties - additional node properties specific to a network
-//Defaults: none
-//NOTE: Network Node Properties must have different keys from Node Properties
-// SAMPLE : [{ key: "netnod1", label: "Value1", dataType: "text", enableEdit: true }];
-var networkNodeProperties = [];
-
-//Network Link Properties - additional link properties specific to a networkKeys
-//Defaults: laneCount
-//NOTE: Network Link Properties must have different keys from Link Properties
-//SAMPLE: { key: "netlin1", label: "Value1", dataType: "text", enableEdit: true }];
-var networkLinkProperties = [];
-
 function PageLoaded() {
 
   //Initial button events
@@ -2432,7 +2404,8 @@ function DeleteSelection(nodeArray, linkArray) {
   }
 
   RemoveFromNetworks(nodeArray, linkArray);
-  RefreshCanvas();
+  RefreshNodeQuadTree();
+  RefreshCanvas(true);
   RefreshPathStyles();
 }
 
@@ -3487,13 +3460,20 @@ function CompileProjectData() {
   count = networks.length;
   for(var i = 0; i < count; i++) {
 
-    var network = Object.assign({}, networks[i]);
+    var network = new Object(); //Object.assign({}, networks[i]);
+    network.name = networks[i].name;
+
+    subCount = networkProperties.length;
+    for (var j = 0; j < subCount; j++) {
+      var key = networkProperties[j].key;
+      network[key] = networks[i][key];
+    }
     projectNetworks.push(network);
 
     var nodeList = [];
     var linkList = [];
 
-    network.nodes.forEach(function(networkNode) {
+    networks[i].nodes.forEach(function(networkNode) {
       //Get node from master list
       var node = nodes.find(x => x.id == networkNode.id);
 
@@ -3519,7 +3499,7 @@ function CompileProjectData() {
       nodeList.push(newNode);
     });
 
-    network.links.forEach(function(networkLink) {
+    networks[i].links.forEach(function(networkLink) {
       //Get link from master list
       var link = links.find(x => GetLinkId(x) == networkLink.id);
 
@@ -3647,9 +3627,9 @@ function FormatXML(data) {
     // var count = networkKeys.length;
 
     var networkXML = xmlDoc.createElement("network");
-    var networkAttr = xmlDoc.createAttribute("id");
-    networkAttr.nodeValue = data[i].id;
-    networkXML.setAttributeNode(networkAttr);
+    var networkAttr; // = xmlDoc.createAttribute("id");
+    // networkAttr.nodeValue = data[i].id;
+    // networkXML.setAttributeNode(networkAttr);
 
     networkAttr = xmlDoc.createAttribute("name");
     networkAttr.nodeValue = data[i].name;
