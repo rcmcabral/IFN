@@ -1,7 +1,5 @@
 #D3CanvasDiv {
-	/* border: 1px solid black; */
 	height: 480px;
-	/* width: 840px; */
 	width: 100%;
 	margin:0 auto;
 	display: block;
@@ -12,25 +10,25 @@
 	height: 100%;
 }
 
-#canvas {
-	/*outline: thin solid red;*/
-}
-
-.layer.active {
-	stroke: #000000;
-}
-
-.categoryGroup .layerIcon {
-	fill-opacity: 1;
-}
-
-.categoryGroup .layerIcon:hover {
-	fill-opacity: 0.8;
+/* IMPORTANT
+*	 CSS classes must be in this order:
+*			- path.link
+*			- path.link.set[#]
+*			- path.link.selectInfo
+*			- path.link.selected
+*			- path.link:hover
+*/
+path.link {
+  fill: none;
+  stroke: #000;
+  stroke-width: 2px;
+  cursor: pointer;
+  marker-end: url("#end-arrow");
 }
 
 /*.layer.set0 circle.node,*/
 g.set0 > circle.node,
-.categoryGroup.set0 {
+.networkGroup.set0 {
 	fill: #1f77b4;
 }
 
@@ -41,7 +39,7 @@ path.link.set0 {
 
 /*.layer.set1 circle.node,*/
 g.set1 > circle.node,
-.categoryGroup.set1 {
+.networkGroup.set1 {
 	fill: #ff7f0e;
 }
 
@@ -52,7 +50,7 @@ path.link.set1 {
 
 /*.layer.set2 circle.node,*/
 g.set2 > circle.node,
-.categoryGroup.set2 {
+.networkGroup.set2 {
 	fill: #2ca02c;
 }
 
@@ -63,7 +61,7 @@ path.link.set2 {
 
 /*.layer.set3 circle.node,*/
 g.set3 > circle.node,
-.categoryGroup.set3 {
+.networkGroup.set3 {
 	fill: #d62728;
 }
 
@@ -74,7 +72,7 @@ path.link.set3 {
 
 /*.layer.set4 circle.node,*/
 g.set4 > circle.node,
-.categoryGroup.set4 {
+.networkGroup.set4 {
 	fill: #9467bd;
 }
 
@@ -85,7 +83,7 @@ path.link.set4 {
 
 /*.layer.set5 circle.node,*/
 g.set5 > circle.node,
-.categoryGroup.set5 {
+.networkGroup.set5 {
 	fill: #8c564b;
 }
 
@@ -96,7 +94,7 @@ path.link.set5 {
 
 /*.layer.set6 circle.node,*/
 g.set6 > circle.node,
-.categoryGroup.set6 {
+.networkGroup.set6 {
 	fill: #e377c2;
 }
 
@@ -107,7 +105,7 @@ path.link.set6 {
 
 /*.layer.set7 circle.node,*/
 g.set7 > circle.node,
-.categoryGroup.set7 {
+.networkGroup.set7 {
 	fill: #7f7f7f;
 }
 
@@ -118,7 +116,7 @@ path.link.set7 {
 
 /*.layer.set8 circle.node,*/
 g.set8 > circle.node,
-.categoryGroup.set8 {
+.networkGroup.set8 {
 	fill: #bcbd22;
 }
 
@@ -129,33 +127,13 @@ path.link.set8 {
 
 /*.layer.set9 circle.node,*/
 g.set9 > circle.node,
-.categoryGroup.set9 {
+.networkGroup.set9 {
 	fill: #17becf;
 }
 
 path.link.set9 {
 	stroke: #17becf;
 	marker-end: url("#end-arrow-set9");
-}
-
-path.link {
-  fill: none;
-  stroke: #000;
-  stroke-width: 2px;
-  cursor: default;
-
-  marker-end: url("#end-arrow");
-}
-
-svg:not(.active):not(.ctrl) path.link {
-  cursor: pointer;
-}
-
-path.link.selected {
-  stroke-dasharray: 10,2;
-  stroke: red;
-
-  marker-end: url("#end-arrow-selected");
 }
 
 path.link.selectInfo {
@@ -165,16 +143,30 @@ path.link.selectInfo {
 	marker-end: url("#end-arrow-selectInfo");
 }
 
-path.link.dragline {
-  pointer-events: none;
+path.link.selected {
+  stroke-dasharray: 10,2;
+  stroke: red;
+
+  marker-end: url("#end-arrow-selected");
+}
+
+path.link.overview {
+	marker-end: none;
+	stroke-linecap: round;
 }
 
 path.link.hidden {
-  stroke-width: 0;
+	display: none;
 }
 
-path.link.hover {
+path.link:hover {
 	stroke: #777777;
+	marker-end: url("#end-arrow-hover");
+}
+
+path.link.dragline {
+  pointer-events: none;
+	marker-end: url("#end-arrow");
 }
 
 g > circle.node {
@@ -184,7 +176,7 @@ g > circle.node {
   	stroke: #000000;
 }
 
-g > circle.node.hover {
+g > circle.node:hover {
 	fill: blue;
 }
 
@@ -192,7 +184,7 @@ g > circle.node.selected {
 	fill: red;
 }
 
-g > circle.node.selected.hover {
+g > circle.node.selected:hover {
 	cursor: -webkit-grab;
 }
 
@@ -230,38 +222,50 @@ g > circle.nodetext{
 	font-size: 12px;
 }
 
-#LayerBox text > tspan.hover {
-	font-weight: bold;
-	fill: red;
-}
-
 #LayerBox text > tspan.edit {
 	/*font-weight: bold;*/
 	cursor: pointer;
+}
+
+#LayerBox text > tspan.edit:hover {
+	font-weight: bold;
+	fill: red;
 }
 
 #LayerBox > #LayerBoxTitle {
 	font-weight: bold;
 }
 
-.categoryGroup text{
+.layer.active {
+	stroke: #000000;
+}
+
+.networkGroup .layerIcon {
+	fill-opacity: 1;
+}
+
+.networkGroup .layerIcon:hover {
+	fill-opacity: 0.8;
+}
+
+.networkGroup text{
 	fill: black;
 }
 
-.categoryGroup.active text{
+.networkGroup.active text{
 	font-weight: bold;
 	fill: black;
 }
 
-.categoryGroup .layerIcon {
+.networkGroup .layerIcon {
 }
 
-.categoryGroup .layerIcon:hover, .layerIcon.disabled:hover {
+.networkGroup .layerIcon:hover, .layerIcon.disabled:hover {
 	/*fill: red;*/
 	cursor: pointer;
 }
 
-.categoryGroup .layerIcon.disabled{
+.networkGroup .layerIcon.disabled{
 	fill: #E7E7E7;
 }
 
@@ -281,6 +285,11 @@ g > circle.nodetext{
 #InfoBox > text > tspan.edit {
 	font-weight: bold;
 	cursor: text;
+}
+
+#InfoBox > text > tspan.edit:hover {
+	font-weight: bold;
+	fill: red;
 }
 
 #InfoBox > #InfoBoxTitle {
